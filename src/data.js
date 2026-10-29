@@ -297,7 +297,7 @@ export const INFO = {
     clinic: 'Aort anevrizması (balonlaşma) yıllarca sessiz büyüyebilir; yırtılması (diseksiyon/rüptür) dakikalar içinde öldürebilir.',
     fact: 'Aortun iç çapı başparmağınız kadardır (~2,5 cm); içindeki kan saniyede ~20 cm hızla akar.' },
   vena_cava: { name: 'Ana Toplardamarlar', latin: 'Vena cava superior & inferior', system: 'vessel',
-    desc: 'Vüzcudun iki ana dönüş borusudur: üst vena kava baş-kol bölgesinin, alt vena kava ise gövde ve bacakların oksijeni kullanılmış kanını sağ kulakçığa boşaltır. Duvarları atardamarlardan ince, içleri daha geniştir.',
+    desc: 'Vücudun iki ana dönüş borusudur: üst vena kava baş-kol bölgesinin, alt vena kava ise gövde ve bacakların oksijeni kullanılmış kanını sağ kulakçığa boşaltır. Duvarları atardamarlardan ince, içleri daha geniştir.',
     funcs: ['Tüm vücudun kirli kanını kalbe geri taşıma', 'Alt vena kava ile karaciğerden süzülmüş kanı iletme'],
     clinic: 'Alt vena kavaya kanser veya pıhtı tıkanırsa her iki bacakta belirgin şişlik gelişir.',
     fact: 'Damar ağı toplam uzunluğu ~100.000 km\'dir — dünyanın çevresini 2,5 kez sarar!' },

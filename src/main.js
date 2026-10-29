@@ -7,6 +7,7 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { INFO, SYSTEMS } from './data.js';
 import { buildBody } from './body.js';
 import { loadRealBody, REAL_SYS_ORDER } from './realBody.js';
+import { TOURS } from './tours.js';
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => [...document.querySelectorAll(s)];
@@ -155,6 +156,7 @@ function prepareModel(mdl) {
 prepareModel(PM);
 
 /* ================= DURUM ================= */
+const tourState = { active: null, idx: 0 };
 const state = {
   selected: null, lastSide: null, hovered: null, isolate: null, override: null,
   xray: false, labels: false, spin: true, explode: 0,
@@ -830,6 +832,77 @@ setInterval(() => {
 }, 1000);
 
 /* ================= SINAV MODU ================= */
+/* ================= DERS TURLARI ================= */
+function buildTourList() {
+  const list = $('#tourList');
+  if (!list) return;
+  list.innerHTML = '';
+  for (const t of TOURS) {
+    const b = document.createElement('button');
+    b.className = 'tour-item';
+    b.innerHTML = `<span class="ti">${t.icon}</span><span class="tt"><b>${t.title}</b><small>${t.desc}</small></span><span class="tc">${t.steps.length} adım</span>`;
+    b.onclick = () => startTour(t.id);
+    list.appendChild(b);
+  }
+}
+function tourStepId(step) {
+  if (M.kind === 'real' && step.real && M.structures.has(step.real)) return step.real;
+  return findEntryByInfo(step.info);
+}
+function startTour(id) {
+  const t = TOURS.find((x) => x.id === id);
+  if (!t) return;
+  if (quiz.active) endQuiz();
+  tourState.active = t;
+  tourState.idx = 0;
+  $('#tourPanel').classList.remove('hidden');
+  applyTourStep();
+  toast(`🎓 "${t.title}" turu başladı — ←/→ tuşlarıyla da gezinebilirsin.`);
+}
+function applyTourStep() {
+  const t = tourState.active;
+  if (!t) return;
+  const step = t.steps[tourState.idx];
+  const id = tourStepId(step);
+  if (id) select(id, { focus: true, ensure: true });
+  $('#tourIcon').textContent = t.icon;
+  $('#tourTitle').textContent = t.title;
+  $('#tourCounter').textContent = `Adım ${tourState.idx + 1}/${t.steps.length}`;
+  $('#tourStepTitle').textContent = step.title;
+  $('#tourText').textContent = step.text;
+  $('#tourDots').innerHTML = t.steps.map((_, i) => `<i class="${i === tourState.idx ? 'on' : ''}"></i>`).join('');
+  $('#tourPrev').disabled = tourState.idx === 0;
+  $('#tourNext').textContent = tourState.idx === t.steps.length - 1 ? 'Bitir ✓' : 'Sonraki →';
+}
+function stepTour(dir) {
+  const t = tourState.active;
+  if (!t) return;
+  const next = tourState.idx + dir;
+  if (next < 0) return;
+  if (next >= t.steps.length) {
+    exitTour();
+    toast('🏁 Tur tamamlandı! Öğrendiklerini pekiştirmek için 🎯 Quiz modunu dene.');
+    return;
+  }
+  tourState.idx = next;
+  applyTourStep();
+}
+function exitTour() {
+  tourState.active = null;
+  $('#tourPanel').classList.add('hidden');
+}
+$('#tourNext').onclick = () => stepTour(1);
+$('#tourPrev').onclick = () => stepTour(-1);
+$('#tourExit').onclick = exitTour;
+addEventListener('keydown', (e) => {
+  if (!tourState.active) return;
+  if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
+  if (e.key === 'ArrowRight') { stepTour(1); e.stopPropagation(); }
+  else if (e.key === 'ArrowLeft') { stepTour(-1); e.stopPropagation(); }
+  else if (e.key === 'Escape') { exitTour(); e.stopPropagation(); }
+}, true);
+buildTourList();
+
 const quiz = { active: false, qs: [], idx: 0, score: 0, correct: 0, streak: 0, best: 0, attempts: 3, timeLeft: 20, locked: false, timer: null, cat: '' };
 const CAT_LABEL = { bone: 'İskelet', muscle: 'Kaslar', organ: 'İç Organlar & Damarlar', nerve: 'Sinir Sistemi' };
 function hideModals() { $('#quizSetup').classList.add('hidden'); $('#quizResult').classList.add('hidden'); $('#creditsModal').classList.add('hidden'); }
@@ -997,6 +1070,7 @@ function setMode(kind) {
   applyLayer(M.defaultLayer);
   applyExplode();
   if (state.xray) refreshXray();
+  if (tourState.active) applyTourStep();
 }
 $$('#modeSeg button').forEach((b) => b.onclick = () => {
   if (b.dataset.mode === M.kind) return;

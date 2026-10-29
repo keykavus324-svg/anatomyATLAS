@@ -125,7 +125,7 @@ export async function loadRealBody({ onProgress = () => {} } = {}) {
   for (const [base, st] of structures) {
     const infoId = mapToInfo(base);
     const info = infoId ? INFO[infoId] : null;
-    const trName = turkishName(base);
+    const trName = turkishName(base, st.system);
     const lex = lexJson[base] || lexJson[`(${base})`] || null;
     const { def, wiki } = cleanDef(defsJson[base] || defsJson[`(${base})`] || '');
     db[base] = {

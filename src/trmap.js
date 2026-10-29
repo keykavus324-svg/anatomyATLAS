@@ -83,6 +83,12 @@ const RULES = [
   [/\b(brachial plexus|median nerve|ulnar nerve|radial nerve|musculocutaneous nerve|axillary nerve)\b/i, 'brachial_plexus'],
   [/\b(sciatic nerve|ischiadic nerve|tibial nerve|common fibular nerve|common peroneal nerve|deep fibular|superficial fibular|sural nerve)\b/i, 'sciatic'],
   [/\b(femoral nerve|obturator nerve|saphenous nerve)\b/i, 'femoral_nerve'],
+  [/^Intervertebral disc C/i, 'cervical'],
+  [/^Intervertebral disc T/i, 'thoracic'],
+  [/^Intervertebral disc L/i, 'lumbar'],
+  [/\bsesamoid\b.*\bfoot\b/i, 'foot_bones'],
+  [/\bsesamoid\b.*\bhand\b/i, 'hand_bones'],
+  [/\b(dura mater|arachnoid mater|pia mater|choroid plexus)\b/i, 'brain'],
 ];
 
 export function mapToInfo(baseName) {
@@ -96,6 +102,7 @@ const ORD = { first: 1, second: 2, third: 3, fourth: 4, fifth: 5, sixth: 6, seve
 const TR_GENERATORS = [
   [/^Vertebra ([CTL]\d+)$/, (m) => `${m[1]} ${m[1][0] === 'C' ? 'Boyun' : m[1][0] === 'T' ? 'Sırt' : 'Bel'} Omuru`],
   [/^Intervertebral disc (.+)$/, (m) => `${m[1]} Disk (İntervertebral)`],
+  [/^Nucleus pulposus ((?:[CTL]\d+)-[CTLS]\d+)$/, (m) => `${m[1]} Nukleus Pulpozus (Disk Çekirdeği)`],
   [/^(\w+) rib$/i, (m) => ORD[m[1].toLowerCase()] ? `${ORD[m[1].toLowerCase()]}. Kaburga` : null],
   [/^Costal cartilage of (\w+) rib$/i, (m) => ORD[m[1].toLowerCase()] ? `${ORD[m[1].toLowerCase()]}. Kaburga Kıkırdağı` : null],
   [/^(\w+) (metacarpal|metatarsal) bone$/i, (m) => ORD[m[1].toLowerCase()] ? `${ORD[m[1].toLowerCase()]}. ${m[2].toLowerCase() === 'metacarpal' ? 'El Tarağı (Metakarp)' : 'Ayak Tarağı (Metatars)'}` : null],
@@ -214,14 +221,403 @@ export const TR_NAMES = {
   'Calcaneal tendon': 'Aşil Tendonu', 'Inguinal ligament': 'Kasık Bağı (İnguinal)',
   'Left lobe of thymus': 'Timus Sol Lobu', 'Right lobe of thymus': 'Timus Sağ Lobu',
   'Thoracic duct': 'Torasik Kanal (Lenf)', 'Cisterna chyli': 'Sisterna Şili',
+  // beyin ekleri
+  'Lateral ventricle': 'Yan Karıncık (Lateral Ventrikül)', 'Third ventricle': 'Üçüncü Karıncık',
+  'Fourth ventricle': 'Dördüncü Karıncık', 'Aqueduct of midbrain': 'Beyin Su Kanalı (Akuadukt)',
+  'Dura mater': 'Dura Mater (Sert Zar)', 'Pia mater': 'Pia Mater (İnce Zar)',
+  'Arachnoid mater': 'Araknoid Zar', 'Choroid plexus': 'Koroid Pleksus',
+  'Tonsil of cerebellum': 'Beyincik Tonsili', 'Red nucleus': 'Kırmızı Çekirdek (N. Ruber)',
+  'Substantia nigra': 'Substansiya Nigra', 'Dentate nucleus': 'Dentat Çekirdek',
+  'Anterior commissure': 'Ön Komissür', 'Cerebral arterial circle': 'Willis Halkası',
+  'Interthalamic adhesion': 'İntertalamik Yapışıklık', 'Septum pellucidum': 'Septum Pellusidum',
+  // göz - kulak
+  'Vitreous body': 'Camsı Cisim', 'Choroid': 'Koroid (Damar Tabaka)', 'Ciliary body': 'Siliyer Cisim',
+  'Optic disc': 'Optik Disk', 'Tympanic membrane': 'Kulak Zarı',
+  'External acoustic meatus': 'Dış Kulak Yolu', 'Pharyngotympanic tube': 'Östaki Borusu',
+  'Auditory tube': 'Östaki Borusu', 'Tympanic cavity': 'Orta Kulak Boşluğu',
+  // kalp - damar ekleri
+  'Chordae tendineae': 'Korda Tendineae (Kalp Kirişleri)', 'Azygos vein': 'Azigos Veni',
+  'Hemiazygos vein': 'Hemiazigos Veni', 'Brachiocephalic vein': 'Brakiyosefalik Ven',
+  'Great cerebral vein': 'Büyük Serebral Ven (Galen)', 'Straight sinus': 'Düz Sinüs (Sinus Rektus)',
+  'Sigmoid sinus': 'Sigmoid Sinüs', 'Transverse sinus': 'Transvers Sinüs',
+  'Superior sagittal sinus': 'Üst Sagital Sinüs', 'Cavernous sinus': 'Kavernöz Sinüs',
+  // pelvis - perine
+  'Corpus cavernosum of penis': 'Korpus Kavernozum', 'Corpus spongiosum of penis': 'Korpus Spongiozum',
+  'Glans penis': 'Glans Penis', 'Ductus deferens': 'Vas Deferens (Tohum Kanalı)',
+  'Ejaculatory duct': 'Ejakülatör Kanal', 'Seminal gland': 'Seminal Vezikül',
+  'Bulbourethral gland': 'Bulboüretral Bez (Cowper)', 'Scrotum': 'Skrotum',
+  // karın - periton
+  'Free taenia': 'Serbest Tenya', 'Mesocolic taenia': 'Mezokolik Tenya', 'Omental taenia': 'Omental Tenya',
+  'Mesocolon': 'Mezokolon', 'Mesentery': 'Mezenter (Bağırsak Askısı)', 'Meso-appendix': 'Mezoapendiks',
+  'Lesser omentum': 'Küçük Omentum', 'Omental bursa': 'Omental Bursa',
+  'Acetabular labrum': 'Asetabular Labrum', 'Glenoid labrum': 'Glenoid Labrum',
+  'Frontal sinus': 'Frontal Sinüs (Alın Sinüsü)', 'Maxillary sinus': 'Maksiller Sinüs',
+  'Sphenoidal sinus': 'Sfenoid Sinüs', 'Ethmoidal cells': 'Etmoid Hücreler',
+  'Renal pelvis': 'Böbrek Pelvisi', 'Renal calyx': 'Böbrek Kaliksi',
+  'Iliotibial tract': 'İliotibial Bant (İTB)', 'Linea alba': 'Linea Alba',
+  'Plantaris': 'Plantaris Kası', 'Popliteus': 'Popliteus Kası', 'Piriformis': 'Piriformis Kası',
+  'Iliacus': 'İliakus Kası', 'Psoas minor': 'Küçük Psoas Kası', 'Anconeus': 'Ankoneus Kası',
+  'Palatoglossus': 'Palatoglossus Kası', 'Styloglossus': 'Stiloglossus Kası',
+  'Hyoglossus': 'Hiyoglossus Kası', 'Genioglossus': 'Geniyoglossus Kası',
+  'Fascia lata': 'Fasya Lata', 'Palatine tonsil': 'Damak Bademciği',
+  'Chorda tympani': 'Korda Timpani', 'Culmen': 'Kulmen', 'Cuneus': 'Kuneus',
+  'Gingiva': 'Diş Eti', 'Laryngopharynx': 'Laringofarinks', 'Nasopharynx': 'Nazofarinks',
+  'Oropharynx': 'Orofarinks', 'Pleura': 'Plevra (Akciğer Zarı)', 'Uvula of palate': 'Küçük Dil (Uvula)',
+  'Central canal': 'Santral Kanal', 'Piriformis muscle': 'Piriformis Kası',
+  'Superior gemellus': 'Üst Gemellus Kası', 'Inferior gemellus': 'Alt Gemellus Kası',
+  'Obturator internus': 'Obturator İnternus Kası', 'Obturator externus': 'Obturator Eksternus Kası',
+  'Quadratus femoris': 'Kuadratus Femoris Kası', 'Articular disc of temporomandibular joint': 'Çene Eklemi Diski',
+  'Pubic symphysis': 'Simfizis Pubis', 'Sacrococcygeal symphysis': 'Sakrokoksigeal Simfiz',
+  'Ligamenta flava': 'Sarı Bağlar (Ligamenta Flava)', 'Infrapatellar fat pad': 'İnfrapatellar Yağ Yastığı',
+  'Platysma': 'Platizma Kası', 'Rotatores': 'Rotator Kasları', 'Supinator': 'Supinator Kası',
+  'Mamillary body': 'Mamiller Cisim', 'Lacrimal sac': 'Gözyaşı Kesesi', 'Orbital sulci': 'Orbital Sulkuslar',
+  'Declive': 'Dekliv', 'Flocculus': 'Flokkulus', 'Folium of vermis': 'Vermis Folyumu',
+  'Habenula': 'Habenula', 'Nodule of vermis': 'Vermis Nodülü', 'Nucleus ambiguus': 'Nukleus Ambiguus',
+  'Nucleus proprius': 'Nukleus Proprius', 'Peduncle of flocculus': 'Flokkulus Pedünkülü',
+  'Precuneus': 'Prekuneus', 'Pyramis of vermis': 'Vermis Piramisi', 'Tuber of vermis': 'Vermis Tuberi',
+  'Spinal dura': 'Spinal Dura Mater', 'Stria medullaris thalami': 'Stria Medullaris Talami',
+  'Stria terminalis': 'Stria Terminalis', 'Ganglia of sympathetic trunk': 'Sempatik Zincir Ganglionları',
+  'Zonular fibres': 'Zonüler Lifler', 'Dorsal venous network of hand': 'El Sırtı Venöz Ağı',
+  'Node of ligamentum arteriosum': 'Ligamentum Arteriyozum Lenf Düğümü',
+  'Lat_Fis-ant-Horizont': 'Lateral Fissür (Sylvian) – Ön Yatay Dal',
+  'Lat_Fis-ant-Vertical': 'Lateral Fissür – Ön Dikey Dal', 'Lat_Fis-post': 'Lateral Fissür – Arka Kısım',
+  'Frenula capsulae': 'Kapsül Frenulumları',
 };
 
-// Türkçe görüntü adı üret: TR_NAMES > üreticiler > null
-export function turkishName(baseName) {
-  if (TR_NAMES[baseName]) return TR_NAMES[baseName];
+/* ================= üretken çeviri motoru =================
+   İsim bileşenlerini (yön sıfatları + bölge kökleri + son isim) sözlükle
+   Türkçeleştirir; bilinmeyen oranı yüksekse vazgeçer (yarım yamalak isim yok). */
+
+const WORD_TR = {
+  // yön / nitelik
+  anterior:'Ön', posterior:'Arka', superior:'Üst', inferior:'Alt', medial:'Medial', lateral:'Lateral',
+  median:'Medyan', middle:'Orta', central:'Santral', superficial:'Yüzeyel', deep:'Derin', external:'Dış',
+  internal:'İç', common:'Ana', proper:'Proper', accessory:'Aksesuar', recurrent:'Rekürren',
+  ascending:'Çıkan', descending:'İnen', transverse:'Transvers', longitudinal:'Longitudinal',
+  oblique:'Oblik', straight:'Düz', arcuate:'Arkuat', perforating:'Perforan', communicating:'Komünikan',
+  collateral:'Kollateral', segmental:'Segmental', basal:'Bazal', apical:'Apikal', lobar:'Lobar',
+  dorsal:'Dorsal', ventral:'Ventral', palmar:'Palmar', plantar:'Plantar', digital:'Dijital',
+  marginal:'Marjinal', terminal:'Terminal', proximal:'Proksimal', distal:'Distal', great:'Büyük',
+  greater:'Büyük', lesser:'Küçük', small:'Küçük', large:'Büyük', long:'Uzun', short:'Kısa',
+  principal:'Ana', main:'Ana', anteriorly:'Ön', supreme:'En Üst', highest:'En Üst', lowest:'En Alt',
+  dorsal:'Dorsal', ventral:'Ventral', radial:'Radial', ulnar:'Ulnar', median:'Medyan',
+  superficial:'Yüzeyel', profunda:'Profunda (Derin)', intermuscular:'İntermüsküler',
+  // bölge / yapı kökleri
+  acetabular:'Asetabular', acromial:'Akromiyal', acromioclavicular:'Akromiyoklavikular',
+  alveolar:'Alveolar', anal:'Anal', angular:'Angular', annular:'Anuler', appendicular:'Apendiküler',
+  articular:'Eklem', arytenoid:'Aritenoid', auricular:'Aurikular', axillary:'Aksiller',
+  basilar:'Baziler', brachial:'Brakiyal', bronchial:'Bronşiyal', buccal:'Bukkal',
+  calcaneal:'Kalkaneal', capsular:'Kapsüler', cardiac:'Kardiyak', carotid:'Karotis', carpal:'Karpal',
+  caudal:'Kaudal', cavernous:'Kavernöz', cecal:'Çekal', celiac:'Çölyak', coeliac:'Çölyak',
+  cephalic:'Sefalik', cerebellar:'Serebellar', cerebral:'Serebral', cervical:'Servikal',
+  circumflex:'Sirkumfleks', clavicular:'Klavikular', coccygeal:'Koksigeal', cochlear:'Koklear',
+  colic:'Kolik', condylar:'Kondiler', conjunctival:'Konjonktival', coronary:'Koroner',
+  corniculate:'Kornikulat', cortical:'Kortikal', costal:'Kostal', cricoid:'Krikoid',
+  cubital:'Kubital', cutaneous:'Kutanöz', cystic:'Sistik', dental:'Dental', diaphragmatic:'Diyafragmatik',
+  duodenal:'Duodenal', dural:'Dural', epididymal:'Epididimal', epigastric:'Epigastrik',
+  epiploic:'Epiploik', esophageal:'Özofageal', oesophageal:'Özofageal', ethmoidal:'Etmoidal',
+  facial:'Fasiyal', femoral:'Femoral', fibular:'Fibular', frontal:'Frontal', gastric:'Gastrik',
+  gastroduodenal:'Gastroduodenal', gastroepiploic:'Gastroepiploik', genicular:'Geniküler',
+  gingival:'Jinjival', glandular:'Glandüler', gluteal:'Gluteal', gonadal:'Gonadal',
+  hepatic:'Hepatik', humeral:'Humeral', hypogastric:'Hipogastrik', hypoglossal:'Hipoglossal',
+  ileal:'İleal', ileocolic:'İleokolik', iliac:'İliyak', infrahyoid:'İnfrahyoid',
+  infraorbital:'İnfraorbital', infratrochlear:'İnfratroklear', inguinal:'İnguinal',
+  interatrial:'İnteratriyal', intercostal:'İnterkostal', interlobar:'İnterlobar',
+  intermuscular:'İntermüsküler', interosseous:'İnterosseöz', interventricular:'İnterventriküler',
+  intervertebral:'İntervertebral', intestinal:'İntestinal', jejunal:'Jejunal', jugular:'Juguler',
+  labial:'Labial', labyrinthine:'Labirentin', lacrimal:'Lakrimal', lacunar:'Lakunar',
+  laryngeal:'Laringeal', lingual:'Lingual', lingular:'Lingular', lumbar:'Lomber',
+  malleolar:'Malleolar', mammary:'Mammar', mandibular:'Mandibular', masseteric:'Masseterik',
+  mastoid:'Mastoid', maxillary:'Maksiller', mental:'Mental', mesenteric:'Mezenterik',
+  metacarpal:'Metakarpal', metatarsal:'Metatarsal', musculophrenic:'Muskülofrenik',
+  mylohyoid:'Milohyoid', nasal:'Nazal', nasopalatine:'Nazopalatin', obturator:'Obturator',
+  occipital:'Oksipital', oculomotor:'Okülomotor', omental:'Omental', ophthalmic:'Oftalmik',
+  orbital:'Orbital', ovarian:'Overyan', palatine:'Palatin', palpebral:'Palpebral',
+  pancreatic:'Pankreatik', parietal:'Pariyetal', parotid:'Parotis', patellar:'Patellar',
+  pectoral:'Pektoral', pelvic:'Pelvik', penile:'Penil', pericardial:'Perikardiyal',
+  pericardiacophrenic:'Perikardiyakofrenik', perineal:'Perineal', peroneal:'Peroneal',
+  petrosal:'Petrozal', pharyngeal:'Faringeal', phrenic:'Frenik', popliteal:'Popliteal',
+  prostatic:'Prostatik', pterygoid:'Pterigoid', pubic:'Pubik', pudendal:'Pudendal',
+  pulmonary:'Pulmoner', pyloric:'Pilorik', radicular:'Radiküler', rectal:'Rektal', renal:'Renal',
+  retromandibular:'Retromandibular', sacral:'Sakral', sacroiliac:'Sakroiliyak', saphenous:'Safen',
+  scapular:'Skapular', sciatic:'Siyatik', scrotal:'Skrotal', semicircular:'Yarım Daire',
+  septal:'Septal', sesamoid:'Sesamoid', sigmoid:'Sigmoid', spermatic:'Spermatik',
+  sphenopalatine:'Sfenopalatin', spinal:'Spinal', spinocerebellar:'Spinoserebellar',
+  spinothalamic:'Spinotalamik', splanchnic:'Splanknik', splenic:'Splenik', sternoclavicular:'Sternoklavikular',
+  stylomastoid:'Stilomastoid', subclavian:'Subklavian', subcostal:'Subkostal', sublingual:'Sublingual',
+  submandibular:'Submandibular', submental:'Submental', suboccipital:'Suboksipital',
+  subscapular:'Subskapular', supraorbital:'Supraorbital', suprarenal:'Suprarenal',
+  suprascapular:'Supraskapular', supratrochlear:'Supratroklear', sural:'Sural',
+  sympathetic:'Sempatik', talocalcaneal:'Talokalkaneal', tarsal:'Tarsal', temporal:'Temporal',
+  testicular:'Testiküler', thalamic:'Talamik', thenar:'Tenar', thoracic:'Torasik',
+  thoracoacromial:'Torakoakromiyal', thoracodorsal:'Torakodorsal', thymic:'Timik', thyroid:'Tiroid',
+  tibial:'Tibial', tibiofibular:'Tibiofibular', tracheal:'Trakeal', trochlear:'Troklear',
+  tympanic:'Timpanik', umbilical:'Umbilikal', ureteric:'Üreterik', uterine:'Uterin',
+  vaginal:'Vajinal', vertebral:'Vertebral', vesical:'Vezikal', vestibular:'Vestibüler',
+  visceral:'Visseral', vocal:'Vokal', zygomatic:'Zigomatik', antebrachial:'Önkol',
+  crural:'Krural', meniscotibial:'Meniskotibial', retinacular:'Retinaküler',
+  // organ / sahiplenilen yapılar (of'lu isimlerde)
+  femur:'Femur', humerus:'Humerus', radius:'Radius', ulna:'Ulna', tibia:'Tibia', fibula:'Fibula',
+  scapula:'Skapula', clavicle:'Klavikula', sternum:'Sternum', patella:'Patella', pelvis:'Pelvis',
+  sacrum:'Sakrum', lung:'Akciğer', heart:'Kalp', liver:'Karaciğer', kidney:'Böbrek',
+  stomach:'Mide', spleen:'Dalak', pancreas:'Pankreas', brain:'Beyin', eye:'Göz', eyeball:'Göz Küresi',
+  ear:'Kulak', tongue:'Dil', tooth:'Diş', skin:'Deri', foot:'Ayak', hand:'El', wrist:'El Bileği',
+  ankle:'Ayak Bileği', elbow:'Dirsek', knee:'Diz', shoulder:'Omuz', hip:'Kalça', neck:'Boyun',
+  head:'Baş', thorax:'Göğüs', abdomen:'Karın', perineum:'Perine', diaphragm:'Diyafram',
+  larynx:'Larinks', pharynx:'Farinks', trachea:'Trakea (Soluk Borusu)', bronchus:'Bronş',
+  colon:'Kolon', rectum:'Rektum', bladder:'Mesane', prostate:'Prostat', penis:'Penis',
+  testis:'Testis', uterus:'Uterus (Rahim)', ovary:'Over (Yumurtalık)', gallbladder:'Safra Kesesi',
+  forearm:'Önkol', arm:'Kol', leg:'Bacak', thigh:'Uyluk', thumb:'Başparmak (El)',
+  finger:'Parmak', toe:'Ayak Parmağı', skull:'Kafatası', mandible:'Mandibula (Alt Çene)',
+  maxilla:'Maksilla (Üst Çene)', vertebra:'Omur', rib:'Kaburga', duodenum:'Duodenum',
+  oesophagus:'Yemek Borusu', esophagus:'Yemek Borusu', urethra:'Üretra', ureter:'Üreter',
+  corpus:'Korpus', callosum:'kallozum',
+  intermediate:'Ara', retropyloric:'Retropilorik', subpyloric:'Subpilorik', suprapyloric:'Suprapilorik',
+  corticospinal:'Kortikospinal', quadrangular:'Kadrangüler', anteromedial:'Anteromedial',
+  apicoposterior:'Apikoposterior', interphalangeal:'İnterfalangeal', metacarpophalangeal:'Metakarpofalangeal',
+  metatarsophalangeal:'Metatarsofalangeal', radioulnar:'Radyoulnar', abdominal:'Abdominal',
+  investing:'Saran', subcutaneous:'Subkutan', infrapatellar:'İnfrapatellar', suprapatellar:'Suprapatellar',
+  major:'Majör', minor:'Minör', alar:'Alar', flexor:'Fleksör', extensor:'Ekstansör', tendon:'Tendon',
+  azygos:'Azigos', hemiazygos:'Hemiazigos', canaliculus:'Kanalikül', fasciculus:'Fasikül',
+  palate:'Damak', cavity:'Boşluk', disc:'Disk', scalene:'Skalen', scalenus:'Skalen',
+  levator:'Kaldırıcı (Levator)', depressor:'Depresör', rotator:'Rotator', sphincter:'Sfinkter',
+  constrictor:'Konstriktör', dilator:'Dilatör', buccinator:'Buksinator', risorius:'Risorius',
+  corrugator:'Korrugator', procerus:'Proserus', nasalis:'Nasalis', auricularis:'Aurikularis',
+  platysma:'Platizma', cremaster:'Kremaster', dartos:'Dartos', palatopharyngeal:'Palatofaringeal',
+  salpingopharyngeal:'Salpingofaringeal', stylopharyngeal:'Stilofaringeal', palatoglossal:'Palatoglossal',
+  geniohyoid:'Geniyohyoid', sternohyoid:'Sternohyoid', sternothyroid:'Sternotiroid', thyrohyoid:'Tirohyoid',
+  omohyoid:'Omohyoid', digastric:'Digastrik', stylohyoid:'Stilohyoid', splenius:'Splenius',
+  semispinalis:'Semispinalis', multifidus:'Multifidus', rotatores:'Rotatores',
+  interspinales:'İnterspinales', intertransversarii:'İntertransversarii', iliocostalis:'İliyokostalis',
+  longissimus:'longissimus', spinalis:'Spinalis', serratus:'Serratus', rhomboid:'Romboid',
+  teres:'Teres', coracobrachialis:'Korakobrakiyalis', anconeus:'Ankoneus', pronator:'Pronator',
+  supinator:'Supinator', opponens:'Opponens', abductor:'Abduktor', adductor:'Adduktor',
+  lumbrical:'Lumbrikal', lumbricals:'Lumbrikaller', interossei:'İnterosseöz', thenar:'Tenar',
+  hypothenar:'Hipotenar', palmaris:'Palmaris', plantaris:'Plantaris', peroneus:'Peroneus',
+  fibularis:'Fibularis', soleus:'Soleus', gastrocnemius:'Gastroknemius', sartorius:'Sartorius',
+  gracilis:'gracilis', pectineus:'Pektineus', iliopsoas:'İliopsoas', psoas:'Psoas', iliacus:'İliakus',
+  piriformis:'Piriformis', gemellus:'Gemellus', quadratus:'Kuadratus', obturator:'Obturator',
+  gluteus:'Gluteus', vastus:'Vastus', rectus:'Rektus', semitendinosus:'Semitendinosus',
+  semimembranosus:'Semimembranosus', popliteus:'Popliteus', hallucis:'hallucis', pollicis:'pollicis',
+  digiti:'digiti', digitorum:'digitorum', indicis:'indicis', minimi:'minimi',
+  sagittal:'Sajital', geniculate:'Jenikulat', body:'Cisim', colliculus:'Kollikulus',
+  white:'Beyaz', matter:'Cevher', telencephalon:'Telensefalon', interpeduncular:'İnterpedünküler',
+  costocervical:'Kostoservikal', thyrocervical:'Tiroservikal', postcentral:'Postsentral',
+  arterial:'Arter', venous:'Venöz', network:'Ağ', ventricle:'Karıncık', subfacial:'Subfasyal',
+  subtendinous:'Subtendinöz', prepatellar:'Prepatellar', vermis:'Vermis', substance:'Madde',
+  plane:'Düzlem', sulphur:'', sulci:'Sulkuslar', sulcus:'Sulkus', gyri:'Giruslar', gyrus:'Girus',
+  fibres:'Lifler', fibers:'Lifler', zonular:'Zonüler', reticular:'Retiküler', flava:'Flava',
+  ligamenta:'Ligamenta', symphysis:'Simfiz', ganglia:'Ganglionlar',
+};
+// kelimesi kelimesine bırakılacak Latince biçimler (küçük yazılır)
+const LATIN_KEEP = new Set(['pollicis','hallucis','digitorum','digiti','carpi','scapulae','femoris',
+  'brachii','dorsi','abdominis','thoracis','capitis','colli','oris','oculi','ani','uteri','pedis',
+  'manus','longus','brevis','magnus','medius','minimus','maximus','longissimus','latissimus',
+  'obliquus','rectus','transversus','profundus','superficialis','minimi','quinti','primi','proprius',
+  'proprii','fasciculus','cuneatus','gracilis','solitarius','ambiguus','vagus','accessorius']);
+const PART_POSS = { head:'Başı', neck:'Boynu', body:'Gövdesi', apex:'Tepesi', base:'Tabanı',
+  root:'Kökü', shaft:'Gövdesi', process:'Çıkıntısı', surface:'Yüzü', border:'Kenarı', margin:'Kenarı',
+  angle:'Köşesi', part:'Parçası', segment:'Segmenti', lobe:'Lobu', lobule:'Lobülü', nucleus:'Çekirdeği',
+  tract:'Traktı', cavity:'Boşluğu', canal:'Kanalı', duct:'Kanalı', foramen:'Deliği', fossa:'Çukuru',
+  notch:'Çentiği', crest:'İbiği', spine:'Dikeni', tubercle:'Tümseği', tuberosity:'Pürtüğü',
+  condyle:'Kondili', epicondyle:'Epikondili', trochanter:'Trokanteri', malleolus:'Malleolü',
+  sinus:'Sinüsü', arch:'Arkı', opening:'Açıklığı', wall:'Duvarı', membrane:'Membranı',
+  capsule:'Kapsülü', trunk:'Gövdesi', division:'Bölümü', ramus:'Ramusu', column:'Sütunu',
+  horn:'Boynuzu', pedicle:'Pedikülü', lamina:'Laminası', plate:'Plağı', wing:'Kanadı', ala:'Kanadı',
+  fundus:'Fundusu', isthmus:'İstmusu', ampulla:'Ampullası', cupula:'Kupulası', vault:'Kubbesi',
+  crus:'Kruru/Bacağı', limb:'Kolu', tail:'Kuyruğu', tail:'Kuyruğu', pole:'Kutbu', hilum:'Hilusu', bursa:'Bursası', uvula:'Uvulası', mucosa:'Mukozası', tonsil:'Bademciği', node:'Lenf Düğümü', tendon:'Tendonu' };
+const SUFFIX_NOUNS = [
+  [' arteries','Arterleri'], [' artery','Arter'], [' veins','Venleri'], [' vein','Ven'],
+  [' nerves','Sinirleri'], [' nerve','Siniri'], [' muscles','Kasları'], [' muscle','Kası'],
+  [' ligaments','Bağları'], [' ligament','Bağı'], [' cartilages','Kıkırdakları'], [' cartilage','Kıkırdağı'],
+  [' bones','Kemikleri'], [' bone','Kemiği'], [' glands','Bezleri'], [' gland','Bezi'],
+  [' ducts','Kanalları'], [' duct','Kanalı'], [' nodes','Lenf Düğümleri'], [' node','Lenf Düğümü'],
+  [' fasciae','Fasyaları'], [' fascia','Fasyası'], [' bursae','Bursaları'], [' bursa','Bursası'],
+  [' joints','Eklemleri'], [' joint','Eklemi'], [' ganglia','Ganglionları'], [' ganglion','Ganglionu'],
+  [' nuclei','Çekirdekleri'], [' nucleus','Çekirdeği'], [' bronchi','Bronşları'], [' bronchus','Bronşu'],
+  [' tract','Traktı'], [' septum','Septumu'], [' plexus','Pleksusu'], [' sinus','Sinüsü'],
+  [' tendon','Tendonu'], [' membrane','Membranı'], [' capsule','Kapsülü'], [' retinaculum','Retinakulumu'],
+  [' aponeurosis','Aponevrozu'], [' lobe','Lobu'], [' lobule','Lobülü'], [' canal','Kanalı'],
+  [' foramen','Deliği'], [' process','Çıkıntısı'], [' peduncle','Pedünkülü'], [' fasciculus','Fasikülü'],
+  [' commissure','Komissürü'], [' lemniscus','Lemniskusu'], [' valve','Kapağı'], [' leaflet','Yaprakçığı'],
+  [' orifice','Ağzı'], [' arch','Arkı'], [' chiasm','Kiyazması'],
+  [' capsules','Kapsülleri'], [' discs','Diskleri'], [' disc','Diski'], [' sheaths','Kılıfları'],
+  [' sheath','Kılıfı'], [' branches','Dalları'], [' branch','Dalı'], [' cavity','Boşluğu'],
+  [' tonsils','Bademcikleri'], [' tonsil','Bademciği'], [' roots','Kökleri'], [' root','Kökü'],
+  [' fossa','Çukuru'], [' sac','Kesesi'], [' pole','Kutbu'], [' trunk','Trunkusu'], [' anastomosis','Anastomozu'],
+];
+const cap = (w) => w ? w[0].toLocaleUpperCase('tr') + w.slice(1) : w;
+function genitive(phrase) {
+  if (!phrase) return phrase;
+  const words = phrase.split(' ');
+  let w = words[words.length - 1];
+  const lw = w.toLocaleLowerCase('tr');
+  const vowels = [...lw].filter((c) => 'aıeiouöü'.includes(c));
+  const last = vowels[vowels.length - 1] || 'a';
+  const h = 'aı'.includes(last) ? 'ı' : 'ei'.includes(last) ? 'i' : 'ou'.includes(last) ? 'u' : 'ü';
+  w = /[aıeiouöü]$/i.test(lw) ? w + 'n' + h + 'n' : w + h + 'n';
+  words[words.length - 1] = w;
+  return words.join(' ');
+}
+function wordTr(tok) {
+  const t = tok.toLowerCase().replace(/^[('"]+|[)'",.]+$/g, '');
+  return WORD_TR[t] || WORD_TR[t.replace(/-/g, '')] || WORD_TR[t.replace(/s$/, '')] || null;
+}
+// kelime kelime çevir; bilinen oranı düşükse null
+function translatePhrase(text) {
+  const toks = text.split(/\s+/).filter(Boolean);
+  let known = 0, total = 0; const out = [];
+  toks.forEach((tok, i) => {
+    const low = tok.toLowerCase();
+    if (['of', 'the', 'and', '&'].includes(low)) return;
+    total++;
+    const tr = wordTr(tok);
+    if (tr) { known++; out.push(tr); }
+    else if (LATIN_KEEP.has(low)) { known++; out.push(low); }
+    else if (ORD[low]) { known++; out.push(ORD[low] + '.'); }
+    else out.push(cap(tok.toLocaleLowerCase('tr')));
+  });
+  if (!total) return null;
+  const unknown = total - known;
+  if (unknown > 1 && known / total < .6) return null;
+  return { tr: out.join(' '), known, total };
+}
+const TR_NAMES_LOWER = new Map(Object.entries(TR_NAMES).map(([k, v]) => [k.toLowerCase(), v]));
+function lookupName(n) {
+  if (!n) return null;
+  const variants = [n, n + ' muscle', n.replace(/\s+muscle$/i, '')];
+  for (const v of variants) if (TR_NAMES[v]) return TR_NAMES[v];
+  for (const v of variants) { const hit = TR_NAMES_LOWER.get(v.toLowerCase()); if (hit) return hit; }
   for (const [re, fn] of TR_GENERATORS) {
-    const m = baseName.match(re);
+    const m = n.match(re);
     if (m) { const out = fn(m); if (out) return out; }
   }
   return null;
+}
+function phraseOrName(x, system) {
+  x = x.trim();
+  if (!/\s/.test(x)) { const w = wordTr(x); if (w) return w; }
+  return lookupName(x) || generate(x, system) || (translatePhrase(x) || {}).tr || null;
+}
+function generate(rawName, system) {
+  if (!rawName) return null;
+  let core = rawName.trim().replace(/[*']+$/, '').trim();
+  if (core.startsWith('(') && core.endsWith(')')) core = core.slice(1, -1).trim();
+  // sondaki parantez ekini ayır: (BVIII) kısa kod ya da (Lateral meniscus) açıklama
+  let suffix = '';
+  const pm = core.match(/^(.*?)\s*\(([^()]+)\)$/);
+  if (pm && !/^(Atlas|Axis)/.test(core)) {
+    core = pm[1].trim();
+    const inner = pm[2].trim();
+    suffix = /^\//.test(inner) ? '' : ' (' + (lookupName(inner) || generate(inner, system) || inner) + ')';
+    if (!core) return null;
+  }
+  const done = (txt) => (txt ? txt + suffix : null);
+  // dişler
+  let m = core.match(/^(Upper|Lower)\s+(?:(first|second|third)\s+)?(molar(?:\s+tooth)?|premolar|canine|(?:lateral|medial|central)\s+incisor|incisor)$/i);
+  if (m) {
+    const typeMap = { molar: 'Azı Dişi', 'molar tooth': 'Azı Dişi', premolar: 'Küçük Azı Dişi',
+      canine: 'Köpek Dişi', 'lateral incisor': 'Yan Kesici Diş', 'medial incisor': 'Orta Kesici Diş',
+      'central incisor': 'Orta Kesici Diş', incisor: 'Kesici Diş' };
+    const t = typeMap[m[3].toLowerCase()] || 'Diş';
+    const ord = m[2] ? ORD[m[2].toLowerCase()] + '. ' : '';
+    const wisdom = m[2] && m[2].toLowerCase() === 'third' && /molar/.test(m[3].toLowerCase()) ? ' (Yirmi Yaş Dişi)' : '';
+    return done((m[1].toLowerCase() === 'upper' ? 'Üst ' : 'Alt ') + ord + t + wisdom);
+  }
+  // Left / Right öneki
+  m = core.match(/^(Left|Right)\s+(.+)$/i);
+  if (m) {
+    const rest = lookupName(m[2]) || generate(m[2], system);
+    if (rest) return done((m[1].toLowerCase() === 'left' ? 'Sol ' : 'Sağ ') + rest);
+    return null;
+  }
+  // sıra öneki (First dorsal interosseous muscle vb.)
+  m = core.match(/^(First|Second|Third|Fourth|Fifth|Sixth|Seventh|Eighth|Ninth|Tenth|Eleventh|Twelfth)\s+(.+)$/i);
+  if (m) {
+    const rest = generate(m[2], system) || (translatePhrase(m[2]) || {}).tr;
+    if (rest) return done(ORD[m[1].toLowerCase()] + '. ' + rest);
+  }
+  // "X branch of Y"
+  m = core.match(/^(?:(.+?)\s+)?branch(?:es)?\s+of\s+(.+)$/i);
+  if (m) {
+    const owner = phraseOrName(m[2], system);
+    if (owner) {
+      const adj = m[1] ? ((translatePhrase(m[1]) || {}).tr || cap(m[1])) : '';
+      return done(genitive(owner) + (adj ? ' ' + adj : '') + (/branches/i.test(core) ? ' Dalları' : ' Dalı'));
+    }
+  }
+  // kas başı / karnı: "Long head of X", "Anterior belly of X"
+  m = core.match(/^(.+?)\s+(head|belly)\s+of\s+(.+)$/i);
+  if (m) {
+    const owner = phraseOrName(m[3].replace(/\s+muscle$/i, ''), system) || phraseOrName(m[3], system);
+    if (owner) {
+      const adj = (translatePhrase(m[1]) || {}).tr || cap(m[1]);
+      return done(genitive(owner) + ' ' + adj + (m[2].toLowerCase() === 'head' ? ' Başı' : ' Karnı'));
+    }
+  }
+  // "Articular capsule of X"
+  m = core.match(/^Articular capsule of (.+)$/i);
+  if (m) { const o = phraseOrName(m[1], system); if (o) return done(o + ' Eklem Kapsülü'); }
+  // (sıfat +) parça adı + of + sahip: "Head of pancreas", "Anterior root of spinal nerve"
+  m = core.match(/^(?:(\w+)\s+)?([A-Za-z]+)\s+of\s+(.+)$/i);
+  if (m && PART_POSS[m[2].toLowerCase()]) {
+    const o = phraseOrName(m[3], system);
+    if (o) {
+      const adj = m[1] ? ((translatePhrase(m[1]) || {}).tr || cap(m[1])) + ' ' : '';
+      return done(o + ' ' + adj + PART_POSS[m[2].toLowerCase()]);
+    }
+  }
+  // "Artery of X" kalıbı
+  m = core.match(/^(?:(\w+)\s+)?(Artery|Vein|Nerve) of (.+)$/i);
+  if (m) {
+    const o = phraseOrName(m[3], system);
+    const noun = { artery: 'Arteri', vein: 'Veni', nerve: 'Siniri' }[m[2].toLowerCase()];
+    const adj = m[1] ? ((wordTr(m[1]) || cap(m[1])) + ' ') : '';
+    if (o) return done(o + ' ' + adj + noun);
+  }
+  // genel "of": ana yapı çevrilebiliyorsa "... (Sahip)" biçimi
+  if (/\s+of\s+/i.test(core)) {
+    const idx = core.toLowerCase().indexOf(' of ');
+    const left = core.slice(0, idx), right = core.slice(idx + 4);
+    const main = generate(left, system);
+    const owner = main ? phraseOrName(right, system) : null;
+    if (main && owner) return done(main + ' (' + owner + ')');
+    return null;
+  }
+  // son isim kategorileri (artery, nerve, muscle...)
+  const low = core.toLowerCase();
+  for (const [suf, noun] of SUFFIX_NOUNS) {
+    if (low.endsWith(suf)) {
+      const headTxt = core.slice(0, -suf.length).trim();
+      if (!headTxt) return null;
+      const ph = translatePhrase(headTxt);
+      if (ph) return done(ph.tr + ' ' + noun);
+      if (suf === ' muscle' || suf === ' muscles') {
+        const toks = headTxt.split(/\s+/);
+        const latin = toks.map((t, i) => wordTr(t) || (i === 0 ? cap(t) : t.toLocaleLowerCase('tr'))).join(' ');
+        return done(latin + ' ' + noun);
+      }
+      return null;
+    }
+  }
+  // kas sistemi Latince yedeği: "Adductor hallucis" -> "Adductor hallucis Kası"
+  if (system === 'muscle' && !/(fascia|bursa|septum|retinaculum|aponeurosis|sheath|fat|ligament|tendon|tract)/i.test(core)) {
+    const toks = core.split(/\s+/);
+    if (toks.length <= 4 && toks.every((t) => /^[A-Za-z-]+$/.test(t)) && !(toks.length === 1 && wordTr(toks[0]))) {
+      const latin = toks.map((t, i) => wordTr(t) || (i === 0 ? cap(t) : t.toLocaleLowerCase('tr'))).join(' ');
+      return done(latin + ' Kası');
+    }
+  }
+  // son çare: tam cümle çevirisi (yüksek bilinen oranı)
+  const ph = translatePhrase(core);
+  if (ph && (ph.known === ph.total || (ph.total >= 2 && ph.known / ph.total >= .7))) return done(ph.tr);
+  return null;
+}
+
+// Türkçe görüntü adı üret: sözlük > özel üreticiler > genel motor > null
+export function turkishName(baseName, system) {
+  if (!baseName || /^\?+$/.test(baseName.trim()) || /^\?x$/i.test(baseName.trim())) return null;
+  const hit = lookupName(baseName);
+  if (hit) return hit;
+  return generate(baseName, system);
 }

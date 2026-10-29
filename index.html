@@ -95,6 +95,9 @@
         <button data-preset="iskelet"><i style="--c:#e8e0c8"></i>İskelet Posteri</button>
         <button data-preset="kas"><i style="--c:#e5484d"></i>Kas Posteri (Écorché)</button>
       </div>
+
+      <div class="sec-title"><span>🎓 Rehberli Ders Turları</span><span class="sec-hint">anlatım + kamera</span></div>
+      <div id="tourList"></div>
     </div>
 
     <div id="tab-structures" class="tab-body hidden">
@@ -202,6 +205,22 @@
   </div>
 
   <!-- SINAV HUD -->
+  <!-- DERS TURU PANELİ -->
+  <div id="tourPanel" class="hidden">
+    <div class="tour-head">
+      <span id="tourIcon">🎓</span>
+      <div class="tour-head-text"><b id="tourTitle">…</b><small id="tourCounter">Adım 1/1</small></div>
+      <button id="tourExit" title="Turdan çık (Esc)">✕</button>
+    </div>
+    <h3 id="tourStepTitle">…</h3>
+    <p id="tourText">…</p>
+    <div class="tour-nav">
+      <button id="tourPrev">← Önceki</button>
+      <div id="tourDots"></div>
+      <button id="tourNext" class="primary">Sonraki →</button>
+    </div>
+  </div>
+
   <div id="quizHud" class="hidden">
     <div class="quiz-top">
       <span id="quizProgress">Soru 1/10</span>
