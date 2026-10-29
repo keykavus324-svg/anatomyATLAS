@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>CORPUS·3D — İnteraktif Anatomi Atlası</title>
-<meta name="description" content="Tarayıcıda çalışan, katman katman soyulabilir, sınav modlu, canlı atan kalpli 3B anatomi atlası." />
+<meta name="description" content="Açık kaynak Z-Anatomy verisiyle 2.800+ gerçek anatomik yapı: katman katman soyulabilir, sınav modlu, Türkçe 3B anatomi atlası." />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='none' stroke='%2322d3ee' stroke-width='2'/%3E%3Ccircle cx='16' cy='9' r='3.4' fill='%2322d3ee'/%3E%3Cpath d='M16 13v8M9 17h14M12 27l4-6 4 6' stroke='%2322d3ee' stroke-width='2' stroke-linecap='round' fill='none'/%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -18,6 +18,7 @@
   <svg id="leaders" aria-hidden="true"></svg>
   <div id="labels" aria-hidden="true"></div>
   <div id="tooltip"></div>
+  <div id="modelCredit" class="hidden"></div>
 
   <!-- ÜST BAR -->
   <header id="topbar">
@@ -33,12 +34,15 @@
 
     <div class="search-wrap">
       <svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      <input id="search" type="text" placeholder="Yapı ara…  (örn. femur, kalp, siyatik)" autocomplete="off" />
+      <input id="search" type="text" placeholder="Yapı ara…  (örn. femur, kalp, siyatik, aorta)" autocomplete="off" />
       <kbd>/</kbd>
       <div id="searchResults" class="hidden"></div>
     </div>
 
     <div class="top-actions">
+      <button id="btnCredits" class="icon-btn" title="Kaynaklar ve lisanslar">
+        <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 16v-4M12 8h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
       <button id="btnShot" class="icon-btn" title="Ekran görüntüsü indir (arkadaşına gönder 😉)">
         <svg class="ic" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="13" r="4" fill="none" stroke="currentColor" stroke-width="2"/></svg>
       </button>
@@ -54,6 +58,10 @@
 
   <!-- SOL PANEL -->
   <aside id="leftPanel" class="panel">
+    <div id="modeSeg" role="group" aria-label="Model seçimi">
+      <button data-mode="real" class="active"> Gerçek Atlas<small>Z-Anatomy · 2.827 yapı</small></button>
+      <button data-mode="proc">Stilize Model<small>canlı simülasyon</small></button>
+    </div>
     <div class="tabs">
       <button class="tab active" data-tab="systems">Sistemler</button>
       <button class="tab" data-tab="structures">Yapılar <span id="structCount" class="pill"></span></button>
@@ -63,12 +71,7 @@
       <div class="sec-title">
         <span>Katman Soyun</span><span id="layerName" class="sec-val">Kaslar</span>
       </div>
-      <div id="layerSeg">
-        <button data-layer="deri">Deri</button>
-        <button data-layer="kas" class="active">Kas</button>
-        <button data-layer="iskelet">İskelet</button>
-        <button data-layer="ic">İç Yapılar</button>
-      </div>
+      <div id="layerSeg"></div>
 
       <div class="sec-title"><span>Sistemler</span><span class="sec-hint">göz = göster / gizle</span></div>
       <div id="systemList"></div>
@@ -95,6 +98,7 @@
     </div>
 
     <div id="tab-structures" class="tab-body hidden">
+      <div id="structNote" class="struct-note hidden"></div>
       <input id="structFilter" type="text" placeholder="Listede filtrele…" autocomplete="off" />
       <div id="structList"></div>
     </div>
@@ -118,13 +122,14 @@
 
     <div id="infoDefault">
       <h2>Keşfetmeye başla</h2>
-      <p class="muted">Model üzerinde herhangi bir kemik, kas, organ veya damara
-        tıklayın — kart burada açılır. Model canlı: kalp atıyor, akciğerler
-        nefes alıyor, damarlarda kan, sinirlerde impuls akıyor.</p>
+      <p class="muted" id="defaultLead">Model üzerinde herhangi bir yapıyı tıklayın —
+        bilgi kartı burada açılır. <b>Gerçek Atlas</b> açık kaynak Z-Anatomy
+        verisiyle 2.800'den fazla gerçek yapı sunar; <b>Stilize Model</b>'de
+        kalp atar, akciğerler nefes alır, kan ve sinir implusları akar.</p>
       <ul class="howto">
         <li><b>Sürükle</b> döndür · <b>Tekerlek</b> yakınlaştır</li>
         <li><b>Tıkla</b> yapı seç · <b>Çift tık</b> odaklan</li>
-        <li><b>1–6</b> sistemleri aç/kapat · <b>R</b> kamerayı sıfırla</li>
+        <li><b>1–7</b> sistemleri aç/kapat · <b>R</b> kamerayı sıfırla</li>
       </ul>
       <div class="fact-card">
         <div class="fact-head">💡 BİLİYOR MUYDUNUZ?
@@ -134,25 +139,36 @@
         <span id="factSrc" class="fact-src"></span>
       </div>
       <div class="stats-row">
-        <div><b id="stYapı">–</b><span>tıklanabilir yapı</span></div>
-        <div><b>6</b><span>sistem</span></div>
-        <div><b>206</b><span>kemik temsil ediliyor</span></div>
+        <div><b id="stYapı">–</b><span id="stYapıLabel">tıklanabilir yapı</span></div>
+        <div><b id="stSistem">7</b><span>sistem</span></div>
+        <div><b id="stUcuncu">206</b><span id="stUcuncuLabel">kemik temsil ediliyor</span></div>
       </div>
     </div>
 
     <div id="infoCard" class="hidden">
       <button id="infoClose" title="Kapat">✕</button>
-      <span id="infoSystem" class="badge"></span>
+      <div class="badge-row">
+        <span id="infoSystem" class="badge"></span>
+        <span id="infoSide" class="badge side hidden"></span>
+      </div>
       <h2 id="infoName"></h2>
       <p id="infoLatin" class="latin"></p>
+      <p id="infoEn" class="orijinal hidden"></p>
       <p id="infoDesc"></p>
-      <h3>İşlevleri</h3>
-      <ul id="infoFuncs"></ul>
-      <div class="clinic">
+      <div id="funcsWrap">
+        <h3>İşlevleri</h3>
+        <ul id="infoFuncs"></ul>
+      </div>
+      <div class="clinic" id="clinicWrap">
         <h3>🩺 Klinik Not</h3>
         <p id="infoClinic"></p>
       </div>
-      <div class="fact-mini"><b>💡</b> <span id="infoFact"></span></div>
+      <div class="fact-mini" id="factWrap"><b>💡</b> <span id="infoFact"></span></div>
+      <div id="defWrap" class="hidden">
+        <h3>Kaynak Tanımı (Z-Anatomy / Wikipedia)</h3>
+        <p id="infoDef" class="def-text"></p>
+      </div>
+      <a id="infoWiki" class="wiki-link hidden" href="#" target="_blank" rel="noopener">Wikipedia'da oku →</a>
       <div class="info-actions">
         <button id="btnFocus" class="btn-soft">◎ Odaklan</button>
         <button id="btnIsolate" class="btn-soft">◐ İzole Et</button>
@@ -233,6 +249,40 @@
     </div>
   </div>
 
+  <!-- KAYNAKLAR -->
+  <div id="creditsModal" class="modal-wrap hidden">
+    <div class="modal credits">
+      <h2>📚 Kaynaklar ve Lisanslar</h2>
+      <div class="credit-block">
+        <h3>Gerçek Atlas modeli (varsayılan)</h3>
+        <p>2.827 parçalı gerçek anatomik model, açık kaynak
+          <b>Z-Anatomy</b> projesinin <b>BodyParts3D</b> (The Database Center for
+          Life Science, Japonya) tabanlı verisidir; glTF çıktısı
+          <b>github.com/nqwrc/3d-anatomy</b> deposundan alınmıştır.</p>
+        <p class="lic">“BodyParts3D — The Database Center for Life Science — CC BY-SA 2.1 Japan” ·
+          “Z-Anatomy — the open source atlas of anatomy — CC BY-SA 4.0”.
+          İç kulak modelleri University of Dundee (CC BY-NC-SA 4.0) ve böbrek
+          modeli lissiecowley (CC BY-NC 4.0) içerdiğinden dağıtımın geçerli
+          lisansı <b>CC BY-NC-SA 4.0</b>'tir — bu uygulama eğitim amaçlı ve
+          ticari değildir. Tanımlar çoğunlukla Wikipedia'dan (CC BY-SA) gelir.</p>
+      </div>
+      <div class="credit-block">
+        <h3>Stilize canlı model</h3>
+        <p>Atan kalp, solunum ve akış simülasyonlu model, bu proje için
+          Three.js ile tamamen prosedürel üretilmiştir. Türkçe anatomi
+          içerikleri eğitim amaçlı özetlerdir; klinik karar için kullanılmaz.</p>
+      </div>
+      <div class="credit-block">
+        <h3>Türkçeleştirme katmanı</h3>
+        <p>Bu projenin katkısı: açık atlas verisini Türkçe isimler, Türkçe
+          açıklamalar, klinik notlar, sınav oyunu ve canlı vital simülasyonuyla
+          birleştiren arayüz. Katkılarınızı bekleriz — çevrilecek daha binlerce
+          yapı var!</p>
+      </div>
+      <button class="btn-ghost" data-close="creditsModal">Kapat</button>
+    </div>
+  </div>
+
   <div id="toast" class="hidden"></div>
 
   <!-- MOBİL PANEL DÜĞMELERİ -->
@@ -248,7 +298,7 @@
       <h1>CORPUS<span>·3D</span></h1>
       <p>İNSAN VÜCUDU · KATMAN KATMAN</p>
       <div class="intro-bar"><i id="introFill"></i></div>
-      <small id="introMsg">Modeller dokuluyor…</small>
+      <small id="introMsg">Z-Anatomy atlası yükleniyor…</small>
     </div>
   </div>
 </div>

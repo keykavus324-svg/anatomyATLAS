@@ -1,29 +1,39 @@
 # CORPUS·3D — İnteraktif Anatomi Atlası 🫀
 
-> "Arkadaşım MacBook'undaki anatomi uygulamasıyla hava attı" diyenler için:
-> tarayıcıda çalışan, kurulum gerektirmeyen, **canlı atan kalbi, akan kanı,
-> sınav modu ve meydan okuma butonuyla** gelen 3B anatomi atlası.
+> "Arkadaşım MacBook'undaki anatomi uygulamasıyla hava attı" diyenler için, cevap:
+> açık kaynak **Z-Anatomy**'nin 2.827 parçalı gerçek insan modelini alıp üzerine
+> Türkçe arayüz + sınav oyunu + canlı vital simülasyonu giydirdik.
+
+## İki model, tek atlas
+
+| | 🦴 Gerçek Atlas (varsayılan) | ❤️ Stilize Model |
+|---|---|---|
+| Kaynak | Z-Anatomy / BodyParts3D (açık kaynak) | Bu proje için prosedürel üretim |
+| Yapı | **2.827 parça · 1.643 benzersiz yapı** | 70 temel yapı |
+| Özellik | Gerçek anatomik model, Latince, tanımlar | Atan kalp, akan kan, nefes, sinir implusları |
+| Türkçe | 589 yapıda Türkçe ad, 483'ünde tam Türkçe içerik | Tamamı Türkçe |
+| Sistem | İskelet, Eklemler, Kaslar, Viserler, Dolaşım, Lenf, Sinir | Deri, Kas, İskelet, Organ, Dolaşım, Sinir |
+
+Soldaki **Gerçek Atlas / Stilize Model** geçişiyle dilediğini seç.
 
 ## Özellikler
 
-- 🧍 **70 tıklanabilir anatomik yapı** — 20 iskelet, 17 kas, 15 iç organ,
-  9 dolaşım, 8 sinir sistemi yapısı + deri. Her biri için Türkçe açıklama,
-  Latince ad, işlevler, 🩺 klinik not ve 💡 ilginç bilgi.
-- 🎚️ **Katman soyma** — Deri → Kas → İskelet → İç Yapılar arasında yumuşak
-  geçiş; sistemleri tek tek aç/kapat veya **SOLO** ile izole et.
-- ❤️ **Yaşayan model** — Kalp, sağ paneldeki **canlı EKG çizgisiyle senkron**
-  atar; akciğerler nefes alır, diyafram hareket eder; atardamarlarda kırmızı,
-  toplardamarlarda mavi kan parçacıkları akar; sinirler boyunca impulslar gezer.
-- 🎓 **Sınav Modu** — Adı verilen yapıyı 3B modelde bul! Süre, seri (streak)
-  çarpanı, unvanlar (🌱 → 🏆 Anatomi Profesörü) ve tek tıkla
+- 🔍 **1.643 yapı için arama** — Türkçe, İngilizce veya Latince (örn. `öçb`,
+  `cruciate`, `siyatik`, `gaster`). `/` tuşu aramaya odaklar.
+- 🎚️ **Katman soyma** — Kaslar → İskelet → İç Yapılar → Tümü;
+  sistemleri tek tek aç/kapat veya **SOLO** ile izole et.
+- 🃏 **Bilgi kartları** — tıklanan yapının tarafı (Sol/Sağ), Latince adı,
+  Türkçe açıklaması + işlevleri + klinik notu, İngilizce kaynak tanımı ve
+  Wikipedia bağlantısı.
+- 🎓 **Sınav Modu** — "Şu yapıyı bul!" oyunu: süre, seri çarpanı,
+  unvanlar (🌱 → 🏆 Anatomi Profesörü) ve tek tıkla
   **"Sonucu Kopyala & Meydan Oku"** butonu.
-- 🔍 **Akıllı arama** — Türkçe/Latince, şapkasız-karaktere duyarsız
-  ("siyatik", "femur", "gaster" hepsi çalışır). `/` tuşu aramaya odaklar.
-- 💥 **Patlat (explode) görünümü**, 🩻 **X-Işını modu**, 🔪 **kesit düzlemi**,
-  🏷️ lider çizgili **etiketler**, bölgeye kamera uçuşları.
-- 📚 **Hazır ders görünümleri** — Kalp & Büyük Damarlar, Solunum, Sindirim,
-  Sinir Sistemi, İskelet/Kas posteri tek tıkla.
-- 📸 **Ekran görüntüsü indir** butonu — cevabını hikayene at. 😏
+- ❤️ **Canlı vitaller** — EKG ile senkron nabız; gerçek modelde kalp
+  kası ritimle ışıldar, stilize modelde kalp gerçekten atar, akciğerler
+  nefes alır, damarlarda kan, sinirlerde impuls akar.
+- 💥 **Patlat (explode)**, 🩻 **X-Işını**, 🔪 **kesit düzlemi**, 🏷️ lider
+  çizgili **etiketler**, bölgeye kamera uçuşu, hazır ders görünümleri.
+- 📸 **Ekran görüntüsü indir** — cevabını hikayene at. 😏
 
 ## Çalıştırma
 
@@ -32,10 +42,8 @@ npm install
 npm run dev      # http://localhost:5173
 ```
 
-Üretim sürümü:
-
 ```bash
-npm run build    # çıktılar: dist/
+npm run build    # üretim sürümü: dist/
 npm run preview
 ```
 
@@ -44,18 +52,27 @@ npm run preview
 | Tuş | İşlev |
 |-----|-------|
 | `/` | Aramaya odaklan |
-| `1–6` | Sistemleri aç/kapat |
+| `1–7` | Sistemleri aç/kapat |
 | `R` | Kamerayı ana görünüme döndür |
-| `Esc` | Seçimi/pencereyi kapat |
+| `Esc` | Seçimi / pencereyi kapat |
 | Sürükle | Döndür · Tekerlek: yakınlaştır · Çift tık: odaklan |
+
+## Veri ve lisans
+
+Gerçek model, açık kaynak [Z-Anatomy](https://github.com/Z-Anatomy/Models-of-human-anatomy)
+projesinin [BodyParts3D](https://dbarchive.biosciencedbc.jp/en/bodyparts3d/)
+tabanlı verisidir; glTF paketleri
+[nqwrc/3d-anatomy](https://github.com/nqwrc/3d-anatomy) deposundan alınmıştır.
+Bazı bileşenler ticari olmayan lisans taşıdığından veri paketinin geçerli
+lisansı **CC BY-NC-SA 4.0**'tir. Ayrıntılar: [ATTRIBUTION.md](ATTRIBUTION.md).
 
 ## Teknoloji
 
-- **Three.js** — Tüm vücut (kemikler, iğ-biçimli kaslar, deforme organlar,
-  damar/sinir eğrileri, sarmal bağırsaklar) harici model dosyası olmadan
-  **tamamen prosedürel** üretilir (`src/body.js`).
+- **Three.js** (GLTFLoader + Draco) — 7 sistem GLB'si `public/models/` altında (~19 MB).
 - **Vite** — geliştirme sunucusu ve derleme.
-- Anatomi içeriği `src/data.js` içinde kolayca genişletilebilir.
+- Türkçe eşleştirme katmanı: `src/trmap.js` (katkıya açık! daha 1000+ yapı
+  Türkçeleştirilmeyi bekliyor).
+- Stilize canlı model tamamen prosedüreldir: `src/body.js`.
 
-> ⚠️ Bu atlas eğitim amaçlı stilize bir modeldir; klinik karar için
-> kullanılmaz. Ama arkadaşınızı susturmak için birebirdir.
+> ⚠️ Eğitim amaçlıdır; klinik karar için kullanılmaz. Ama arkadaşınızı
+> susturmak için birebirdir.

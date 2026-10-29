@@ -354,3 +354,42 @@ input[type=range]::-moz-range-thumb{width:14px; height:14px; border-radius:50%; 
   .bb-group.views{display:none}
   #quizHud{top:86px}
 }
+
+/* ---------- model değiştirici & ek öğeler ---------- */
+#modeSeg{display:flex; gap:6px; padding:12px 12px 4px}
+#modeSeg button{flex:1; padding:9px 6px 7px; border-radius:11px; font-size:12.5px; font-weight:800;
+  color:var(--muted); background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08);
+  transition:.2s; line-height:1.25; text-align:center}
+#modeSeg button small{display:block; font-size:9.5px; font-weight:600; letter-spacing:.05em;
+  color:var(--muted2); margin-top:2px; text-transform:uppercase}
+#modeSeg button:hover{color:var(--txt)}
+#modeSeg button.active{color:#bff3ff; border-color:rgba(34,211,238,.55);
+  background:linear-gradient(140deg,rgba(34,211,238,.22),rgba(45,212,191,.12));
+  box-shadow:0 4px 16px rgba(34,211,238,.18)}
+#modeSeg button.active small{color:rgba(191,243,255,.65)}
+#modelCredit{position:absolute; left:14px; bottom:16px; z-index:25; max-width:288px;
+  font-size:10px; line-height:1.5; color:var(--muted2); background:rgba(8,13,24,.66);
+  border:1px solid rgba(255,255,255,.07); border-radius:10px; padding:7px 10px;
+  backdrop-filter:blur(8px)}
+#modelCredit b{color:var(--muted)}
+.badge-row{display:flex; gap:6px; flex-wrap:wrap}
+.badge.side{--sys:#f5c542}
+.orijinal{font-size:12px; color:var(--muted); margin:-6px 0 10px; font-family:"JetBrains Mono",monospace}
+.def-text{font-size:12.5px; line-height:1.65; color:#a9bfd2}
+#defWrap{background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.07);
+  border-radius:12px; padding:11px 13px; margin-top:16px}
+#defWrap h3{margin-top:0}
+.wiki-link{display:inline-block; margin-top:13px; font-size:12.5px; font-weight:700; color:var(--cyan);
+  text-decoration:none; border-bottom:1px dashed rgba(34,211,238,.5); padding-bottom:1px}
+.wiki-link:hover{color:#a5f3fc}
+.struct-note{font-size:11.5px; line-height:1.55; color:var(--muted);
+  background:rgba(34,211,238,.07); border:1px solid rgba(34,211,238,.2);
+  border-radius:11px; padding:9px 11px; margin-bottom:10px}
+.struct-item .tr-badge{margin-left:6px; flex:0 0 auto; font-size:8.5px; font-weight:800;
+  letter-spacing:.06em; color:#0b2b1f; background:#34d399; border-radius:4px; padding:1px 4px}
+.modal.credits{max-height:min(84vh,720px); overflow-y:auto; width:min(560px,calc(100vw - 32px))}
+.credit-block{margin:14px 0}
+.credit-block h3{font-size:13px; font-weight:800; color:var(--cyan); margin-bottom:5px}
+.credit-block p{font-size:12.5px; line-height:1.62; color:#c3d4e2}
+.credit-block p.lic{color:var(--muted); font-size:11.5px; margin-top:6px}
+@media (max-width: 880px){ #modelCredit{display:none} }

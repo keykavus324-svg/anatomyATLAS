@@ -7,6 +7,8 @@ export const SYSTEMS = {
   organ:  { tr: 'İç Organlar',      color: '#f08a5d' },
   vessel: { tr: 'Dolaşım Sistemi',  color: '#d63a5f' },
   nerve:  { tr: 'Sinir Sistemi',    color: '#f5c542' },
+  joint:  { tr: 'Eklemler & Bağlar', color: '#a3c585' },
+  lymph:  { tr: 'Lenfatik Sistem',  color: '#7bc47f' },
 };
 
 export const INFO = {
