@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CORPUS·3D — İnteraktif Anatomi Atlası</title>
+<meta name="description" content="Tarayıcıda çalışan, katman katman soyulabilir, sınav modlu, canlı atan kalpli 3B anatomi atlası." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='none' stroke='%2322d3ee' stroke-width='2'/%3E%3Ccircle cx='16' cy='9' r='3.4' fill='%2322d3ee'/%3E%3Cpath d='M16 13v8M9 17h14M12 27l4-6 4 6' stroke='%2322d3ee' stroke-width='2' stroke-linecap='round' fill='none'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,400&family=Sora:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+<div id="app">
+  <!-- 3B sahne -->
+  <div id="stage"></div>
+  <svg id="leaders" aria-hidden="true"></svg>
+  <div id="labels" aria-hidden="true"></div>
+  <div id="tooltip"></div>
+
+  <!-- ÜST BAR -->
+  <header id="topbar">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 32 32" width="30" height="30"><circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="16" cy="9" r="3.4" fill="currentColor"/><path d="M16 13v8M9 17h14M12 27l4-6 4 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+      </div>
+      <div class="brand-text">
+        <h1>CORPUS<span>·3D</span></h1>
+        <p>İNTERAKTİF ANATOMİ ATLASI</p>
+      </div>
+    </div>
+
+    <div class="search-wrap">
+      <svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="search" type="text" placeholder="Yapı ara…  (örn. femur, kalp, siyatik)" autocomplete="off" />
+      <kbd>/</kbd>
+      <div id="searchResults" class="hidden"></div>
+    </div>
+
+    <div class="top-actions">
+      <button id="btnShot" class="icon-btn" title="Ekran görüntüsü indir (arkadaşına gönder 😉)">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="13" r="4" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      </button>
+      <button id="btnFull" class="icon-btn" title="Tam ekran">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <button id="btnQuiz" class="btn-primary">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M22 10L12 5 2 10l10 5 10-5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        Sınav Modu
+      </button>
+    </div>
+  </header>
+
+  <!-- SOL PANEL -->
+  <aside id="leftPanel" class="panel">
+    <div class="tabs">
+      <button class="tab active" data-tab="systems">Sistemler</button>
+      <button class="tab" data-tab="structures">Yapılar <span id="structCount" class="pill"></span></button>
+    </div>
+
+    <div id="tab-systems" class="tab-body">
+      <div class="sec-title">
+        <span>Katman Soyun</span><span id="layerName" class="sec-val">Kaslar</span>
+      </div>
+      <div id="layerSeg">
+        <button data-layer="deri">Deri</button>
+        <button data-layer="kas" class="active">Kas</button>
+        <button data-layer="iskelet">İskelet</button>
+        <button data-layer="ic">İç Yapılar</button>
+      </div>
+
+      <div class="sec-title"><span>Sistemler</span><span class="sec-hint">göz = göster / gizle</span></div>
+      <div id="systemList"></div>
+
+      <div class="sec-title"><span>Bölgeye Uç</span></div>
+      <div id="regionChips" class="chips">
+        <button data-region="tum">Tüm Vücut</button>
+        <button data-region="bas">Baş &amp; Boyun</button>
+        <button data-region="gogus">Göğüs</button>
+        <button data-region="karin">Karın</button>
+        <button data-region="kol">Kol</button>
+        <button data-region="bacak">Bacak</button>
+      </div>
+
+      <div class="sec-title"><span>Hazır Ders Görünümleri</span></div>
+      <div id="presetList">
+        <button data-preset="dolanim"><i style="--c:#ff5b6a"></i>Kalp &amp; Büyük Damarlar</button>
+        <button data-preset="solunum"><i style="--c:#7dd3fc"></i>Solunum Sistemi</button>
+        <button data-preset="sindirim"><i style="--c:#fbbf24"></i>Sindirim Sistemi</button>
+        <button data-preset="sinir"><i style="--c:#facc15"></i>Sinir Sistemi</button>
+        <button data-preset="iskelet"><i style="--c:#e8e0c8"></i>İskelet Posteri</button>
+        <button data-preset="kas"><i style="--c:#e5484d"></i>Kas Posteri (Écorché)</button>
+      </div>
+    </div>
+
+    <div id="tab-structures" class="tab-body hidden">
+      <input id="structFilter" type="text" placeholder="Listede filtrele…" autocomplete="off" />
+      <div id="structList"></div>
+    </div>
+  </aside>
+
+  <!-- SAĞ PANEL -->
+  <aside id="rightPanel" class="panel">
+    <div id="vitals">
+      <div class="vitals-head">
+        <span class="live-dot"></span> CANLI VİTAL BULGULAR
+        <span class="vitals-note">simüle model ayakta, bilinç açık :)</span>
+      </div>
+      <canvas id="ecg" width="520" height="110"></canvas>
+      <div class="vitals-grid">
+        <div><label>KALP HIZI</label><b id="vBpm">72 <small>bpm</small></b></div>
+        <div><label>SpO₂</label><b id="vSpo2">%98</b></div>
+        <div><label>SOLUNUM</label><b id="vResp">12 <small>/dk</small></b></div>
+        <div><label>TANSİYON</label><b>120/80</b></div>
+      </div>
+    </div>
+
+    <div id="infoDefault">
+      <h2>Keşfetmeye başla</h2>
+      <p class="muted">Model üzerinde herhangi bir kemik, kas, organ veya damara
+        tıklayın — kart burada açılır. Model canlı: kalp atıyor, akciğerler
+        nefes alıyor, damarlarda kan, sinirlerde impuls akıyor.</p>
+      <ul class="howto">
+        <li><b>Sürükle</b> döndür · <b>Tekerlek</b> yakınlaştır</li>
+        <li><b>Tıkla</b> yapı seç · <b>Çift tık</b> odaklan</li>
+        <li><b>1–6</b> sistemleri aç/kapat · <b>R</b> kamerayı sıfırla</li>
+      </ul>
+      <div class="fact-card">
+        <div class="fact-head">💡 BİLİYOR MUYDUNUZ?
+          <button id="btnFact" title="Yeni bilgi">↻</button>
+        </div>
+        <p id="factText"></p>
+        <span id="factSrc" class="fact-src"></span>
+      </div>
+      <div class="stats-row">
+        <div><b id="stYapı">–</b><span>tıklanabilir yapı</span></div>
+        <div><b>6</b><span>sistem</span></div>
+        <div><b>206</b><span>kemik temsil ediliyor</span></div>
+      </div>
+    </div>
+
+    <div id="infoCard" class="hidden">
+      <button id="infoClose" title="Kapat">✕</button>
+      <span id="infoSystem" class="badge"></span>
+      <h2 id="infoName"></h2>
+      <p id="infoLatin" class="latin"></p>
+      <p id="infoDesc"></p>
+      <h3>İşlevleri</h3>
+      <ul id="infoFuncs"></ul>
+      <div class="clinic">
+        <h3>🩺 Klinik Not</h3>
+        <p id="infoClinic"></p>
+      </div>
+      <div class="fact-mini"><b>💡</b> <span id="infoFact"></span></div>
+      <div class="info-actions">
+        <button id="btnFocus" class="btn-soft">◎ Odaklan</button>
+        <button id="btnIsolate" class="btn-soft">◐ İzole Et</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ALT ARAÇ ÇUBUĞU -->
+  <div id="bottomBar">
+    <div class="bb-group views" role="group" aria-label="Kamera görünümü">
+      <button data-view="on">Ön</button>
+      <button data-view="arka">Arka</button>
+      <button data-view="sol">Sol</button>
+      <button data-view="sag">Sağ</button>
+    </div>
+    <div class="bb-sep"></div>
+    <label class="bb-slider">Patlat
+      <input id="rngExplode" type="range" min="0" max="100" value="0" />
+    </label>
+    <label class="bb-slider">Kesit
+      <input id="rngClip" type="range" min="0" max="100" value="100" />
+    </label>
+    <div class="bb-sep"></div>
+    <div class="bb-group toggles">
+      <button id="tgLabels">Etiketler</button>
+      <button id="tgXray">X-Işını</button>
+      <button id="tgSpin" class="active">Döndür</button>
+    </div>
+    <div class="bb-sep"></div>
+    <button id="btnReset" class="btn-ghost">⟲ Sıfırla</button>
+  </div>
+
+  <!-- SINAV HUD -->
+  <div id="quizHud" class="hidden">
+    <div class="quiz-top">
+      <span id="quizProgress">Soru 1/10</span>
+      <span id="quizStreak"></span>
+      <span id="quizScore">0 puan</span>
+      <button id="quizExit">✕ Çık</button>
+    </div>
+    <div class="quiz-question">Şu yapıyı bul ve tıkla:<b id="quizTarget">…</b></div>
+    <div class="quiz-timer"><i id="quizTimerBar"></i></div>
+    <div class="quiz-bottom">
+      <span id="quizMsg"></span>
+      <button id="quizSkip">Pas →</button>
+    </div>
+  </div>
+
+  <!-- SINAV KURULUM -->
+  <div id="quizSetup" class="modal-wrap hidden">
+    <div class="modal">
+      <h2>🎓 Sınav Modu</h2>
+      <p class="muted">Adı verilen yapıyı 3B model üzerinde bulup tıklayın.
+        Her soru 20 saniye, 3 yanlış hakkı. Seri yaptıkça puan katsayısı artar.
+        Arkadaşınıza meydan okumaya hazır mısınız?</p>
+      <div class="quiz-cats">
+        <button data-cat="bone">🦴 İskelet</button>
+        <button data-cat="muscle">💪 Kaslar</button>
+        <button data-cat="organ">🫀 İç Organlar &amp; Damarlar</button>
+        <button data-cat="nerve">🧠 Sinir Sistemi</button>
+      </div>
+      <button class="modal-close btn-ghost" data-close="quizSetup">Vazgeç</button>
+    </div>
+  </div>
+
+  <!-- SINAV SONUÇ -->
+  <div id="quizResult" class="modal-wrap hidden">
+    <div class="modal center">
+      <div id="resultEmoji">🏆</div>
+      <h2 id="resultTitle">Anatomi Profesörü</h2>
+      <div class="result-score"><b id="resultScore">0</b><span>puan</span></div>
+      <p id="resultDetail" class="muted"></p>
+      <div class="result-actions">
+        <button id="btnChallenge" class="btn-primary">📋 Sonucu Kopyala &amp; Meydan Oku</button>
+        <button id="btnAgain" class="btn-soft">Tekrar Dene</button>
+        <button class="btn-ghost" data-close="quizResult">Kapat</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="hidden"></div>
+
+  <!-- MOBİL PANEL DÜĞMELERİ -->
+  <div id="mobileBtns">
+    <button id="mbLeft">☰ Sistemler</button>
+    <button id="mbRight">ℹ Bilgi</button>
+  </div>
+
+  <!-- GİRİŞ EKRANI -->
+  <div id="intro">
+    <div class="intro-inner">
+      <svg viewBox="0 0 32 32" width="72" height="72" class="intro-mark"><circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="16" cy="9" r="3.4" fill="currentColor"/><path d="M16 13v8M9 17h14M12 27l4-6 4 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/></svg>
+      <h1>CORPUS<span>·3D</span></h1>
+      <p>İNSAN VÜCUDU · KATMAN KATMAN</p>
+      <div class="intro-bar"><i id="introFill"></i></div>
+      <small id="introMsg">Modeller dokuluyor…</small>
+    </div>
+  </div>
+</div>
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>
