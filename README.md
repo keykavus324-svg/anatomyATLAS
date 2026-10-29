@@ -34,6 +34,10 @@ Soldaki **Gerçek Atlas / Stilize Model** geçişiyle dilediğini seç.
   nefes alır, damarlarda kan, sinirlerde impuls akar.
 - 💥 **Patlat (explode)**, 🩻 **X-Işını**, 🔪 **kesit düzlemi**, 🏷️ lider
   çizgili **etiketler**, bölgeye kamera uçuşu, hazır ders görünümleri.
+- 🎨 **Görünüm Temaları** — ücretli atlas sunumu: sisteme özel fiziksel
+  doku malzemeleri (ıslak kas/organ parlaması, mat fildişi kemik, saten
+  sinir) + 4 ışık/renk reçetesi: **Atlas**, **🩸 Gerçekçi** (varsayılan),
+  **🌙 Sinematik**, **💡 Klinik**. Seçim tarayıcıda saklanır.
 - 🎓 **Rehberli Ders Turları** — "Bir Damla Kanın Yolculuğu", "Bir
   Nefesin İzinde", "Lokmanın Yolculuğu", "Komuta Merkezi", "İskelet
   Turu": anlatımlı adımlar kamerayı yapıdan yapıya uçurur (←/→ ile gez).

@@ -42,7 +42,7 @@ controls.minDistance = .8; controls.maxDistance = 30;
 controls.maxPolarAngle = 1.66;
 controls.autoRotate = true; controls.autoRotateSpeed = .8;
 
-scene.add(new THREE.HemisphereLight(0xbfd9ff, 0x241408, .55));
+const hemi = new THREE.HemisphereLight(0xbfd9ff, 0x241408, .55); scene.add(hemi);
 const key = new THREE.DirectionalLight(0xffffff, 2.4);
 key.position.set(6, 13, 7); key.castShadow = true;
 key.shadow.mapSize.set(2048, 2048);
@@ -72,6 +72,16 @@ const fill = new THREE.DirectionalLight(0xffd9b0, .5); fill.position.set(-6, 3, 
   const glow = new THREE.Mesh(new THREE.CircleGeometry(5.2, 48),
     new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
   glow.rotation.x = -Math.PI / 2; glow.position.y = -.12; scene.add(glow);
+  // gerçek model golge dusurmez (performans): ayak altina yumusak temas golgesi
+  const bc = document.createElement('canvas'); bc.width = bc.height = 256;
+  const bgc = bc.getContext('2d');
+  const bgrad = bgc.createRadialGradient(128, 128, 10, 128, 128, 126);
+  bgrad.addColorStop(0, 'rgba(0,0,0,.62)'); bgrad.addColorStop(.55, 'rgba(0,0,0,.30)'); bgrad.addColorStop(1, 'rgba(0,0,0,0)');
+  bgc.fillStyle = bgrad; bgc.fillRect(0, 0, 256, 256);
+  const blob = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 1.7),
+    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(bc), transparent: true, depthWrite: false }));
+  blob.rotation.x = -Math.PI / 2; blob.position.y = .007; blob.name = 'contactBlob'; blob.visible = false;
+  scene.add(blob);
   const n = 340, pos = new Float32Array(n * 3);
   for (let i = 0; i < n; i++) {
     const r = 4 + Math.random() * 15, a = Math.random() * Math.PI * 2;
@@ -81,6 +91,8 @@ const fill = new THREE.DirectionalLight(0xffd9b0, .5); fill.position.set(-6, 3, 
   const dust = new THREE.Points(dg, new THREE.PointsMaterial({ color: 0x86c5ff, size: .04, transparent: true, opacity: .45, depthWrite: false }));
   dust.name = 'dust'; scene.add(dust);
 }
+
+const contactBlob = scene.getObjectByName('contactBlob');
 
 /* ================= MODELLER ================= */
 const clipPlane = new THREE.Plane(V3(0, -1, 0), 11);
@@ -145,6 +157,8 @@ function prepareModel(mdl) {
         m.userData.baseEmissiveIntensity = m.emissiveIntensity;
       }
       if (m.userData.baseOpacity === undefined) m.userData.baseOpacity = 1;
+      if (m.color && m.userData.baseColor === undefined) m.userData.baseColor = m.color.getHex();
+      if (m.roughness !== undefined && m.userData.baseRoughness === undefined) m.userData.baseRoughness = m.roughness;
     }
     for (const mesh of p.meshes) {
       mesh.userData.origMat = mesh.material;
@@ -154,6 +168,55 @@ function prepareModel(mdl) {
   for (const f of mdl.flows) { f.mat.clippingPlanes = [clipPlane]; f.points.renderOrder = 8; }
 }
 prepareModel(PM);
+
+/* ================= GORUNUM TEMALARI =================
+   Renk doygunlugu/acikligi + puruzluluk + studo isiklari hep birlikte
+   sekillenir. Varsayilan "Gercekci": derin doku renkleri, islak parlama. */
+const VISUAL_THEMES = {
+  atlas:     { label: 'Atlas',     sat: -.04, light: .02,  roughF: 1,    exposure: 1.08, env: .55, hemi: .55, keyI: 2.4, rimI: 1.5, fillI: .5 },
+  gercekci:  { label: 'Gerçekçi',  sat: .14,  light: -.07, roughF: .82,  exposure: 1.02, env: .70, hemi: .42, keyI: 2.6, rimI: 1.9, fillI: .45 },
+  sinematik: { label: 'Sinematik', sat: .06,  light: -.14, roughF: 1.05, exposure: .98,  env: .40, hemi: .22, keyI: 2.9, rimI: 2.6, fillI: .22 },
+  klinik:    { label: 'Klinik',    sat: -.34, light: .12,  roughF: 1.25, exposure: 1.16, env: .65, hemi: .75, keyI: 2.1, rimI: .9,  fillI: .7 },
+};
+let visualTheme = (() => { try { const t = localStorage.getItem('corpus-theme'); return VISUAL_THEMES[t] ? t : 'gercekci'; } catch { return 'gercekci'; } })();
+// sistem bazinda baz duzeltmeler (her temanin altinda uygulanir)
+const SYS_GRADE = {
+  bone:   { ds: -.22, dl: .05 },
+  joint:  { ds: -.10, dl: .03 },
+  muscle: { ds: .05,  dl: -.02 },
+  organ:  { ds: .03,  dl: -.02 },
+  vessel: { ds: .06,  dl: -.02 },
+  lymph:  { ds: 0,    dl: -.01 },
+  nerve:  { ds: -.05, dl: 0 },
+};
+const _themeColor = new THREE.Color();
+function applyVisualTheme(name, { announce = false } = {}) {
+  visualTheme = VISUAL_THEMES[name] ? name : 'gercekci';
+  const T = VISUAL_THEMES[visualTheme];
+  try { localStorage.setItem('corpus-theme', visualTheme); } catch {}
+  document.body.dataset.vtheme = visualTheme;
+  renderer.toneMappingExposure = T.exposure;
+  scene.environmentIntensity = T.env;
+  hemi.intensity = T.hemi; key.intensity = T.keyI; rim.intensity = T.rimI; fill.intensity = T.fillI;
+  for (const mdl of [PM, RM]) {
+    if (!mdl) continue;
+    for (const part of mdl.parts) for (const m of part.mats) {
+      if (m.color && m.userData.baseColor !== undefined) {
+        const G = SYS_GRADE[part.system] || { ds: 0, dl: 0 };
+        _themeColor.setHex(m.userData.baseColor);
+        _themeColor.offsetHSL(0, T.sat + G.ds, T.light + G.dl);
+        m.color.copy(_themeColor);
+      }
+      if (m.roughness !== undefined && m.userData.baseRoughness !== undefined)
+        m.roughness = clamp(m.userData.baseRoughness * T.roughF, .05, 1);
+      if (m.envMapIntensity !== undefined) m.envMapIntensity = .6;
+    }
+  }
+  $$('#themeSeg button').forEach((b) => b.classList.toggle('active', b.dataset.vtheme === visualTheme));
+  if (announce) toast('🎨 Görünüm: ' + T.label);
+}
+$$('#themeSeg button').forEach((b) => b.onclick = () => applyVisualTheme(b.dataset.vtheme, { announce: true }));
+applyVisualTheme(visualTheme);
 
 /* ================= DURUM ================= */
 const tourState = { active: null, idx: 0 };
@@ -1065,6 +1128,7 @@ function setMode(kind) {
   PM.root.visible = kind === 'proc';
   if (RM) RM.root.visible = kind === 'real';
   M = kind === 'proc' ? PM : RM;
+  if (contactBlob) contactBlob.visible = kind === 'real';
   rngExplode.value = 0; state.explode = 0; syncRange(rngExplode);
   rebuildModelUI();
   applyLayer(M.defaultLayer);
@@ -1240,6 +1304,7 @@ addEventListener('resize', () => {
     RM.root.visible = false;
     scene.add(RM.root);
     prepareModel(RM);
+    applyVisualTheme(visualTheme);
     console.log(`Z-Anatomy hazır: ${built.meta.meshCount} parça, ${built.meta.entryCount} yapı.`);
     setMode('real');
     finishIntro();

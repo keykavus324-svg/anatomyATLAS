@@ -40,6 +40,35 @@ function cleanDef(text) {
   return { def, wiki };
 }
 
+// Sistem bazında doku hissi: GLB'nin dağınık plastik malzemeleri yerine
+// ücretli uygulamalar tarzı tutarlı fiziksel yüzeyler (ıslak kas/organ,
+// mat kemik, saten sinir). Renk kaynağı (arter kırmızı / ven mavi...) korunur.
+const SYS_MAT = {
+  bone:   { rough: .52, cc: 0 },
+  joint:  { rough: .34, cc: .35 },
+  muscle: { rough: .46, cc: .30 },
+  organ:  { rough: .30, cc: .50 },
+  vessel: { rough: .30, cc: .45 },
+  lymph:  { rough: .38, cc: .30 },
+  nerve:  { rough: .42, cc: .20 },
+};
+function toPhysical(src, sys) {
+  const P = SYS_MAT[sys] || { rough: .45, cc: .2 };
+  return new THREE.MeshPhysicalMaterial({
+    name: src.name,
+    color: src.color ? src.color.clone() : new THREE.Color(0xffffff),
+    map: src.map || null,
+    roughness: P.rough, metalness: 0,
+    clearcoat: P.cc, clearcoatRoughness: .55, envMapIntensity: .6,
+    emissive: src.emissive ? src.emissive.clone() : new THREE.Color(0x000000),
+    emissiveIntensity: src.emissiveIntensity ?? 1,
+    transparent: !!src.transparent, opacity: src.opacity ?? 1,
+    alphaTest: src.alphaTest || 0,
+    side: src.side ?? THREE.FrontSide,
+    depthWrite: src.depthWrite !== false,
+  });
+}
+
 export async function loadRealBody({ onProgress = () => {} } = {}) {
   const draco = new DRACOLoader();
   draco.setDecoderPath(BASE + 'draco/');
@@ -93,7 +122,7 @@ export async function loadRealBody({ onProgress = () => {} } = {}) {
     for (const mesh of meshes) {
       const { base, side } = parseName(mesh.name || '');
       if (!base) continue;
-      mesh.material = mesh.material.clone();
+      mesh.material = toPhysical(mesh.material, sys);
       mesh.material.userData.baseOpacity = 1;
       mesh.castShadow = false; mesh.receiveShadow = false;
       mesh.userData.sid = base; mesh.userData.system = sys; mesh.userData.side = side;
