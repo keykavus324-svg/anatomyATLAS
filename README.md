@@ -32,7 +32,7 @@ Soldaki **Gerçek Atlas / Stilize Model** geçişiyle dilediğini seç.
 - ❤️ **Canlı vitaller** — EKG ile senkron nabız; gerçek modelde kalp
   kası ritimle ışıldar, stilize modelde kalp gerçekten atar, akciğerler
   nefes alır, damarlarda kan, sinirlerde impuls akar.
-- 💥 **Patlat (explode)**, 🩻 **X-Işını**, 🔪 **kesit düzlemi**, 🏷️ lider
+- 💥 **Patlat (explode)**, 🩻 **X-Işını**, 🔪 **üç eksenli kesit** (aksiyal, sagital, koronal), 🏷️ lider
   çizgili **etiketler**, bölgeye kamera uçuşu, hazır ders görünümleri.
 - 🎨 **Görünüm Temaları** — ücretli atlas sunumu: sisteme özel fiziksel
   doku malzemeleri (ıslak kas/organ parlaması, mat fildişi kemik, saten
@@ -40,12 +40,23 @@ Soldaki **Gerçek Atlas / Stilize Model** geçişiyle dilediğini seç.
   **🌙 Sinematik**, **💡 Klinik**. Seçim tarayıcıda saklanır.
 - 🎓 **Rehberli Ders Turları** — "Bir Damla Kanın Yolculuğu", "Bir
   Nefesin İzinde", "Lokmanın Yolculuğu", "Komuta Merkezi", "İskelet
-  Turu": anlatımlı adımlar kamerayı yapıdan yapıya uçurur (←/→ ile gez).
-  İki modelde de çalışır.
+  Turu", "Kas Gücü", "Boşaltım" ve "Görme Yolu": anlatımlı adımlar
+  kamerayı yapıdan yapıya uçurur (←/→ ile gez). Üreter ve optik kiyazma
+  stilize modelde ayrı gösterilmez; bu adımlar için Gerçek Atlas’a geçin.
 - 🈳 **Üretken Türkçe çeviri motoru** — yön sıfatları, iyelik
   tamlamaları ("Spinal Siniri Ön Kökü"), dişler, damarlar/aort dalları
   gibi isim kalıplarını çözümleyen motor sayesinde 1.643 yapının
   %99,8'i düzgün Türkçe isim taşır.
+- ⭐ **Çalışma listesi** — seçilen yapıları yıldızla, yapı listesinde filtrele
+  ve yıldızlılardan sınava gir. Favoriler her model için ayrı ve tarayıcıya özgüdür.
+- 🔗 **Görünüm paylaşımı** — kamera, model, sistemler, seçim, tema, kesit,
+  patlatma ve X-ışını/etiket ayarları bağlantıya eklenir. Çok büyük özel hazır
+  görünüm haritaları linke sığmadığında önce bir katman seçmek gerekir.
+- 📱 **Kurulabilir ve çevrimdışı** — üretim sürümünde HTTPS (veya localhost)
+  üzerinde uygulama menüsünden yüklenebilir. İlk açılışta internet ve yaklaşık
+  21 MB önbellek gerekir; tüm dosyaların indirilmesi bitince aynı cihazda
+  çevrimdışı açılabilir. Depolama alanı veya tarayıcı politikaları kurulumu
+  engelleyebilir; harici fontlar çevrimdışıyken sistem fontuna döner.
 - 📸 **Ekran görüntüsü indir** — cevabını hikayene at. 😏
 
 ## Çalıştırma
@@ -58,7 +69,11 @@ npm run dev      # http://localhost:5173
 ```bash
 npm run build    # üretim sürümü: dist/
 npm run preview
+npm test          # ders referansları ve çevrimdışı önbellek testleri
 ```
+
+Çevrimdışı önbellek yalnızca üretim derlemesinde etkinleşir; `npm run dev`
+çevrimdışı kurulum için kullanılmaz.
 
 ## Kısayollar
 
@@ -84,7 +99,7 @@ lisansı **CC BY-NC-SA 4.0**'tir. Ayrıntılar: [ATTRIBUTION.md](ATTRIBUTION.md)
 - **Three.js** (GLTFLoader + Draco) — 7 sistem GLB'si `public/models/` altında (~19 MB).
 - **Vite** — geliştirme sunucusu ve derleme.
 - Türkçe eşleştirme katmanı: `src/trmap.js` (katkıya açık! daha 1000+ yapı
-  Türkçeleştirilmeyi bekliyor).
+  Türkçe karşılıkların gözden geçirilmesi ve iyileştirilmesi için katkıya açıktır).
 - Stilize canlı model tamamen prosedüreldir: `src/body.js`.
 
 > ⚠️ Eğitim amaçlıdır; klinik karar için kullanılmaz. Ama arkadaşınızı

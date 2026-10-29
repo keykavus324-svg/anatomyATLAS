@@ -95,7 +95,10 @@ const fill = new THREE.DirectionalLight(0xffd9b0, .5); fill.position.set(-6, 3, 
 const contactBlob = scene.getObjectByName('contactBlob');
 
 /* ================= MODELLER ================= */
-const clipPlane = new THREE.Plane(V3(0, -1, 0), 11);
+const clipPlane = new THREE.Plane(V3(0, -1, 0), 100);
+const clipSag = new THREE.Plane(V3(-1, 0, 0), 100);
+const clipCor = new THREE.Plane(V3(0, 0, -1), 100);
+const clipPlanes = [clipPlane, clipSag, clipCor];
 const RENDER_ORDER = { bone: 1, joint: 1, organ: 2, muscle: 2, vessel: 3, lymph: 3, nerve: 3, skin: 6 };
 
 const PROC_SYS_ORDER = ['skin', 'muscle', 'bone', 'organ', 'vessel', 'nerve'];
@@ -141,7 +144,7 @@ function xrayMatFor(kind, id) {
   if (!xrayCache.has(k)) {
     const m = new THREE.MeshPhysicalMaterial({
       color: 0x86d7ff, roughness: .25, metalness: .1, transparent: true,
-      emissive: 0x0b3d5c, emissiveIntensity: .8, clippingPlanes: [clipPlane], depthWrite: false,
+      emissive: 0x0b3d5c, emissiveIntensity: .8, clippingPlanes: clipPlanes, depthWrite: false,
     });
     m.userData = { baseOpacity: .30, baseEmissive: 0x0b3d5c, baseEmissiveIntensity: .8 };
     xrayCache.set(k, m);
@@ -151,7 +154,7 @@ function xrayMatFor(kind, id) {
 function prepareModel(mdl) {
   for (const p of mdl.parts) {
     for (const m of p.mats) {
-      m.clippingPlanes = [clipPlane];
+      m.clippingPlanes = clipPlanes;
       if (m.emissive) {
         m.userData.baseEmissive = m.emissive.getHex();
         m.userData.baseEmissiveIntensity = m.emissiveIntensity;
@@ -165,7 +168,7 @@ function prepareModel(mdl) {
       mesh.renderOrder = RENDER_ORDER[p.system] ?? 1;
     }
   }
-  for (const f of mdl.flows) { f.mat.clippingPlanes = [clipPlane]; f.points.renderOrder = 8; }
+  for (const f of mdl.flows) { f.mat.clippingPlanes = clipPlanes; f.points.renderOrder = 8; }
 }
 prepareModel(PM);
 
@@ -220,6 +223,15 @@ applyVisualTheme(visualTheme);
 
 /* ================= DURUM ================= */
 const tourState = { active: null, idx: 0 };
+// Favoriler iki model için ayrı tutulur; aynı kimlik farklı yapılar anlamına gelebilir.
+const STAR_KEY = 'corpus-stars-v1';
+let stars = { real: [], proc: [] };
+try {
+  const saved = JSON.parse(localStorage.getItem(STAR_KEY) || '{}');
+  for (const kind of ['real', 'proc']) if (Array.isArray(saved[kind]))
+    stars[kind] = [...new Set(saved[kind].filter((x) => typeof x === 'string'))];
+} catch {}
+let starsOnly = false;
 const state = {
   selected: null, lastSide: null, hovered: null, isolate: null, override: null,
   xray: false, labels: false, spin: true, explode: 0,
@@ -366,6 +378,7 @@ function select(id, { focus = false, ensure = false, side = null } = {}) {
   }
   $$('.struct-item').forEach((b) => b.classList.toggle('active', b.dataset.id === id));
   syncIsolateBtn();
+  syncStarUI();
   refreshHighlights();
   if (state.xray) refreshXray();
 }
@@ -523,6 +536,29 @@ const PRESETS = {
 };
 $$('#presetList button').forEach((b) => b.onclick = () => PRESETS[b.dataset.preset]());
 
+/* ================= ÇALIŞMA LİSTESİ ================= */
+function isStarred(id) { return stars[M.kind].includes(id); }
+function syncStarUI() {
+  const on = state.selected && isStarred(state.selected);
+  $('#btnStar').classList.toggle('on', !!on);
+  $('#btnStar').textContent = on ? '★ Yıldızlı' : '☆ Yıldızla';
+  $('#btnStar').setAttribute('aria-pressed', String(!!on));
+  $('#starFilter').classList.toggle('on', starsOnly);
+  $('#starFilter').setAttribute('aria-pressed', String(starsOnly));
+  const count = M.ids.filter(isStarred).length;
+  $('#starCount').textContent = count;
+  $('#quizStarCount').textContent = `(${count})`;
+}
+$('#btnStar').onclick = () => {
+  const id = state.selected;
+  if (!id) return;
+  stars[M.kind] = isStarred(id) ? stars[M.kind].filter((x) => x !== id) : [...stars[M.kind], id];
+  try { localStorage.setItem(STAR_KEY, JSON.stringify(stars)); }
+  catch { toast('Yıldızlar bu oturum için kaydedildi; tarayıcı depolamasına yazılamadı.', 'bad'); }
+  buildStructList();
+};
+$('#starFilter').onclick = () => { starsOnly = !starsOnly; syncStarUI(); filterStructList(); };
+
 /* ================= YAPI LİSTESİ ================= */
 function fold(s) {
   return s.toLocaleLowerCase('tr-TR')
@@ -535,7 +571,7 @@ function buildStructList() {
   const note = $('#structNote');
   let listedIds = M.ids;
   if (M.kind === 'real') {
-    listedIds = M.ids.filter((id) => M.db[id].tr);
+    listedIds = M.ids.filter((id) => M.db[id].tr || isStarred(id));
     note.textContent = `Z-Anatomy'de toplam ${M.meta.entryCount} benzersiz yapı (${M.meta.meshCount} parça) var. Burada Türkçe adı/içeriği olan ${listedIds.length} yapı listelenir; geri kalanına üstteki aramayla (Türkçe/İngilizce/Latince) ulaşabilirsiniz.`;
     note.classList.remove('hidden');
   } else note.classList.add('hidden');
@@ -549,25 +585,30 @@ function buildStructList() {
     for (const id of ids) {
       const d = M.db[id];
       const btn = document.createElement('button');
-      btn.className = 'struct-item'; btn.dataset.id = id; btn.dataset.sys = sys;
-      btn.innerHTML = `<span class="dot" style="background:${SYSTEMS[sys].color}"></span><span>${d.name}</span>${d.infoId ? '<span class="tr-badge">TR+</span>' : ''}<span class="lat">${d.latin || ''}</span>`;
+      btn.className = 'struct-item'; btn.classList.toggle('active', id === state.selected); btn.dataset.id = id; btn.dataset.sys = sys;
+      btn.innerHTML = `<span class="dot" style="background:${SYSTEMS[sys].color}"></span><span>${d.name}</span>${d.infoId ? '<span class="tr-badge">TR+</span>' : ''}${isStarred(id) ? '<span class="star-mark">★</span>' : ''}<span class="lat">${d.latin || ''}</span>`;
       btn.onclick = () => select(id, { ensure: true, focus: true });
       list.appendChild(btn);
     }
   }
-  $('#structCount').textContent = listedIds.length;
+  syncStarUI();
+  filterStructList();
 }
-$('#structFilter').addEventListener('input', (e) => {
-  const q = fold(e.target.value);
+function filterStructList() {
+  const q = fold($('#structFilter').value);
+  let count = 0;
   const visBySys = {};
   $$('.struct-item').forEach((b) => {
     const d = M.db[b.dataset.id];
-    const show = !q || fold(d.name + ' ' + (d.latin || '') + ' ' + (d.en || '')).includes(q);
+    const show = (!starsOnly || isStarred(b.dataset.id)) && (!q || fold(d.name + ' ' + (d.latin || '') + ' ' + (d.en || '')).includes(q));
+    if (show) count++;
     b.style.display = show ? '' : 'none';
     if (show) visBySys[b.dataset.sys] = true;
   });
   $$('.struct-group').forEach((h) => h.style.display = visBySys[h.dataset.sys] ? '' : 'none');
-});
+  $('#structCount').textContent = count;
+}
+$('#structFilter').addEventListener('input', filterStructList);
 $$('.tab').forEach((t) => t.onclick = () => {
   $$('.tab').forEach((x) => x.classList.toggle('active', x === t));
   $('#tab-systems').classList.toggle('hidden', t.dataset.tab !== 'systems');
@@ -624,7 +665,7 @@ document.addEventListener('click', (e) => { if (!e.target.closest('.search-wrap'
 
 /* ================= ALT BAR ================= */
 function syncRange(el) { el.style.setProperty('--v', el.value + '%'); }
-const rngExplode = $('#rngExplode'), rngClip = $('#rngClip');
+const rngExplode = $('#rngExplode'), rngClip = $('#rngClip'), rngClipSag = $('#rngClipSag'), rngClipCor = $('#rngClipCor');
 let diaExplodeY = PM.animated.diaphragm ? PM.animated.diaphragm.position.y : 0;
 function applyExplode(mdl = M) {
   for (const p of mdl.parts) {
@@ -633,8 +674,15 @@ function applyExplode(mdl = M) {
   }
 }
 rngExplode.addEventListener('input', () => { state.explode = rngExplode.value / 100; syncRange(rngExplode); applyExplode(); });
-rngClip.addEventListener('input', () => { syncRange(rngClip); clipPlane.constant = -.2 + (rngClip.value / 100) * 11.2; });
-syncRange(rngExplode); syncRange(rngClip);
+const clipControls = [[rngClip, clipPlane, -.2, 11.2], [rngClipSag, clipSag, -5, 10], [rngClipCor, clipCor, -5, 10]];
+function updateClips() {
+  for (const [input, plane, min, span] of clipControls) {
+    syncRange(input);
+    plane.constant = Number(input.value) === 100 ? 100 : min + Number(input.value) / 100 * span;
+  }
+}
+for (const [input] of clipControls) input.addEventListener('input', updateClips);
+syncRange(rngExplode); updateClips();
 
 function applyEntryFade(id, cur) {
   const st = M.structures.get(id);
@@ -686,7 +734,8 @@ function resetAll() {
   state.isolate = null; state.override = null;
   if (state.xray) $('#tgXray').click();
   rngExplode.value = 0; state.explode = 0; syncRange(rngExplode); applyExplode();
-  rngClip.value = 100; syncRange(rngClip); clipPlane.constant = 11;
+  for (const [input] of clipControls) input.value = 100;
+  updateClips();
   applyLayer(M.defaultLayer);
   animateCam(HOME_POS, HOME_TGT, 1.2);
 }
@@ -741,7 +790,7 @@ function castAt(clientX, clientY) {
   for (const h of hits) {
     let o = h.object, shown = true;
     while (o) { if (!o.visible) { shown = false; break; } o = o.parent; }
-    if (!shown) continue;
+    if (!shown || clipPlanes.some((plane) => plane.distanceToPoint(h.point) < 0)) continue;
     const id = h.object.userData.sid;
     if ((M.fade.get(id) ?? 0) > .15) return { id, side: h.object.userData.side || null };
   }
@@ -843,6 +892,7 @@ function updateLabels() {
     const hide = () => { L.div.style.display = 'none'; L.line.style.display = 'none'; L.dot.style.display = 'none'; };
     if ((M.fade.get(L.id) ?? 0) < .55) { hide(); continue; }
     L.getWorld(_pv);
+    if (clipPlanes.some((plane) => plane.distanceToPoint(_pv) < 0)) { hide(); continue; }
     _rad.set(_pv.x, 0, _pv.z);
     if (_rad.length() > .28) {
       _tc.copy(camera.position).sub(_pv);
@@ -926,13 +976,14 @@ function applyTourStep() {
   const t = tourState.active;
   if (!t) return;
   const step = t.steps[tourState.idx];
-  const id = tourStepId(step);
+  const id = M.kind === 'proc' && step.realOnly ? null : tourStepId(step);
   if (id) select(id, { focus: true, ensure: true });
+  else select(null);
   $('#tourIcon').textContent = t.icon;
   $('#tourTitle').textContent = t.title;
   $('#tourCounter').textContent = `Adım ${tourState.idx + 1}/${t.steps.length}`;
   $('#tourStepTitle').textContent = step.title;
-  $('#tourText').textContent = step.text;
+  $('#tourText').textContent = step.text + (!id ? ' (Bu yapı stilize modelde ayrı gösterilmez; Gerçek Atlas’a geçin.)' : '');
   $('#tourDots').innerHTML = t.steps.map((_, i) => `<i class="${i === tourState.idx ? 'on' : ''}"></i>`).join('');
   $('#tourPrev').disabled = tourState.idx === 0;
   $('#tourNext').textContent = tourState.idx === t.steps.length - 1 ? 'Bitir ✓' : 'Sonraki →';
@@ -967,7 +1018,7 @@ addEventListener('keydown', (e) => {
 buildTourList();
 
 const quiz = { active: false, qs: [], idx: 0, score: 0, correct: 0, streak: 0, best: 0, attempts: 3, timeLeft: 20, locked: false, timer: null, cat: '' };
-const CAT_LABEL = { bone: 'İskelet', muscle: 'Kaslar', organ: 'İç Organlar & Damarlar', nerve: 'Sinir Sistemi' };
+const CAT_LABEL = { bone: 'İskelet', muscle: 'Kaslar', organ: 'İç Organlar & Damarlar', nerve: 'Sinir Sistemi', stars: 'Yıldızlılarım' };
 function hideModals() { $('#quizSetup').classList.add('hidden'); $('#quizResult').classList.add('hidden'); $('#creditsModal').classList.add('hidden'); }
 $$('[data-close]').forEach((b) => b.onclick = () => $('#' + b.dataset.close).classList.add('hidden'));
 $('#btnQuiz').onclick = () => { if (!quiz.active) $('#quizSetup').classList.remove('hidden'); };
@@ -984,13 +1035,18 @@ function startQuiz(cat) {
   hideModals();
   let pool = M.ids.filter((id) => {
     const c = entryCategory(id);
+    if (cat === 'stars') return isStarred(id);
     if (M.kind === 'real' && !M.db[id].tr) return false;
     return cat === 'organ' ? (c === 'organ' || c === 'vessel') : c === cat;
   });
+  if (!pool.length) { toast(cat === 'stars' ? 'Önce bu modelde bir yapıyı yıldızla.' : 'Bu kategoride sınav sorusu bulunamadı.', 'bad'); $('#quizSetup').classList.remove('hidden'); return; }
+  for (const [input] of clipControls) input.value = 100;
+  updateClips();
   if (state.xray) $('#tgXray').click();
   if (state.labels) $('#tgLabels').click();
   select(null);
-  if (M.kind === 'proc') {
+  if (cat === 'stars') setSystems(Object.fromEntries(M.sysOrder.map((s) => [s, 1])));
+  else if (M.kind === 'proc') {
     if (cat === 'bone') applyLayer('iskelet');
     else if (cat === 'muscle') setSystems({ muscle: 1 });
     else if (cat === 'organ') setSystems({ bone: .18, organ: 1, vessel: 1 });
@@ -1022,6 +1078,10 @@ function startQuiz(cat) {
 function setQuestion() {
   select(null);
   const id = quiz.qs[quiz.idx];
+  if (quiz.cat === 'stars') {
+    // Hedef sistemi görünür kıl; iç yapıları örten diğer sistemleri kaldır.
+    setSystems({ [M.db[id].system]: 1 });
+  }
   quiz.attempts = 3; quiz.timeLeft = 20; quiz.locked = false;
   $('#quizProgress').textContent = `Soru ${quiz.idx + 1}/${quiz.qs.length}`;
   $('#quizTarget').innerHTML = `${M.db[id].name}<small>${M.db[id].latin || ''}</small>`;
@@ -1144,6 +1204,56 @@ $$('#modeSeg button').forEach((b) => b.onclick = () => {
     ? '🫀 Gerçek Atlas: açık kaynak Z-Anatomy üzerinde 2.827 yapı — tıklayıp keşfedin!'
     : '🎨 Stilize Model: atan kalp ve akan kan simülasyonu aktif.');
 });
+
+/* ================= GÖRÜNÜM BAĞLANTISI ================= */
+function snapshotView() {
+  if (state.override && state.override.size > 200) {
+    toast('Bu hazır görünüm çok fazla yapı içeriyor. Paylaşmak için bir katman seçin.', 'bad');
+    return null;
+  }
+  return { v: 1, mode: M.kind, theme: visualTheme, camera: camera.position.toArray(), target: controls.target.toArray(),
+    systems: M.systems, selected: state.selected, side: state.lastSide, isolate: state.isolate,
+    override: state.override ? [...state.override] : null, clips: clipControls.map(([el]) => +el.value),
+    explode: +rngExplode.value, xray: state.xray, labels: state.labels };
+}
+$('#btnShare').onclick = async () => {
+  const view = snapshotView(); if (!view) return;
+  const url = new URL(location.href); url.hash = 'v=' + encodeURIComponent(JSON.stringify(view));
+  try { await navigator.clipboard.writeText(url.href); toast('🔗 Görünüm bağlantısı kopyalandı.', 'ok'); }
+  catch { window.prompt('Bağlantıyı kopyala:', url.href); }
+};
+function restoreView() {
+  if (!location.hash.startsWith('#v=')) return false;
+  try {
+    const data = JSON.parse(decodeURIComponent(location.hash.slice(3)));
+    const vec = (v) => Array.isArray(v) && v.length === 3 && v.every((x) => typeof x === 'number' && Number.isFinite(x) && Math.abs(x) <= 100);
+    if (data.v !== 1 || !['real', 'proc'].includes(data.mode) || !vec(data.camera) || !vec(data.target)) throw Error('Geçersiz bağlantı');
+    if (data.mode === 'real' && !RM) { toast('Bağlantıdaki gerçek atlas yüklenemedi.', 'bad'); return false; }
+    setMode(data.mode);
+    if (VISUAL_THEMES[data.theme]) applyVisualTheme(data.theme);
+    if (data.systems && typeof data.systems === 'object') {
+      for (const sys of M.sysOrder) {
+        const value = data.systems[sys];
+        if (typeof value === 'number' && Number.isFinite(value)) M.systems[sys] = clamp(value, 0, 1);
+      }
+      markLayerCustom(); postVisibilityChange();
+    }
+    if (Array.isArray(data.override) && data.override.length <= 200) {
+      state.override = new Map(data.override.filter((item) => Array.isArray(item) && M.structures.has(item[0]) && typeof item[1] === 'number' && Number.isFinite(item[1])).map(([id, val]) => [id, clamp(val, 0, 1)]));
+    }
+    if (M.structures.has(data.selected)) select(data.selected, { side: ['l', 'r'].includes(data.side) ? data.side : null });
+    if (M.structures.has(data.isolate)) { state.isolate = data.isolate; syncIsolateBtn(); }
+    if (Array.isArray(data.clips)) clipControls.forEach(([el], i) => { if (Number.isFinite(data.clips[i])) el.value = clamp(data.clips[i], 0, 100); });
+    updateClips();
+    if (Number.isFinite(data.explode)) { rngExplode.value = clamp(data.explode, 0, 100); state.explode = +rngExplode.value / 100; syncRange(rngExplode); applyExplode(); }
+    if (!!data.xray !== state.xray) $('#tgXray').click();
+    if (!!data.labels !== state.labels) $('#tgLabels').click();
+    state.spin = false; controls.autoRotate = false; $('#tgSpin').classList.remove('active');
+    camAnim = null; camera.position.fromArray(data.camera); controls.target.fromArray(data.target); controls.update();
+    toast('🔗 Paylaşılan görünüm açıldı.', 'ok');
+    return true;
+  } catch (err) { console.warn('Görünüm bağlantısı okunamadı:', err); toast('Görünüm bağlantısı geçersiz.', 'bad'); return false; }
+}
 
 /* ================= ANA DÖNGÜ ================= */
 const clock = new THREE.Clock();
@@ -1288,7 +1398,7 @@ addEventListener('resize', () => {
     const wait = Math.max(0, 950 - (performance.now() - t0));
     setTimeout(() => {
       $('#intro').classList.add('done');
-      animateCam(HOME_POS, HOME_TGT, 1.9);
+      if (!restoreView()) animateCam(HOME_POS, HOME_TGT, 1.9);
       setTimeout(() => toast(M.kind === 'real'
         ? '👋 HOŞ GELDİNİZ! Açık kaynak Z-Anatomy atlasındasınız — 2.827 gerçek yapı sizi bekliyor. Bir kasa tıklayın!'
         : '👋 HOŞ GELDİNİZ! Bir kasa tıklayın ya da "İç Yapılar" katmanına geçip atan kalbi izleyin.'), 1300);
@@ -1316,3 +1426,11 @@ addEventListener('resize', () => {
   });
 }
 console.log(`CORPUS·3D: stilize model ${PM.ids.length} yapı ile hazır; gerçek atlas yükleniyor…`);
+
+// Çevrimdışı kurulum yalnızca üretim derlemesinde etkin.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  const firstInstall = !navigator.serviceWorker.controller;
+  navigator.serviceWorker.register(import.meta.env.BASE_URL + 'sw.js').then(() => navigator.serviceWorker.ready).then(() => {
+    if (firstInstall) toast('📱 Atlas çevrimdışı kullanım için hazır.', 'ok');
+  }).catch((err) => console.warn('Çevrimdışı kurulum başarısız:', err));
+}

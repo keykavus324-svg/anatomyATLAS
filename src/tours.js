@@ -66,4 +66,38 @@ export const TOURS = [
       { info: 'foot_bones', title: 'Ayak Kemikleri', text: '26 kemik, 33 eklem. Ayağın kemerleri bir amortisör gibi her adımda vücut ağırlığının kat kat fazlasını sünger. Günde ortalama 8-10 bin adım; ömür boyu Dünya çevresinde ~4 tur. İskelet turu bitti — 206 kemiğe saygı duruşu! 🎉' },
     ],
   },
+  {
+    id: 'kas', icon: '💪', title: 'Kas Gücü: Şampiyonlar Ligi',
+    desc: 'En güçlü, en büyük, en çalışkan kaslar',
+    steps: [
+      { info: 'masseter', real: 'Superficial part of masseter', title: 'Çiğneme Şampiyonu: Masseter', text: 'Güçlü bir çiğneme kasıdır; çeneyi kapatarak ısırma kuvveti üretir. Dişlerini sıktığında çenende şişen kas tam o. Gece diş gıcırdatması (bruksizm) bu kası vücut geliştirici gibi büyütür.' },
+      { info: 'deltoid', title: 'Omzun Kalkanı: Deltoid', text: 'Üç köşeli (delta Δ harfi gibi) bu kas kolu yana kaldırır ve omuz eklemini zırh gibi örter. Aşıların kola yapılmasının nedeni de o: kalın, ulaşması kolay ve büyük damar-sinir paketlerinden uzak bir kas.' },
+      { info: 'biceps', title: 'Klasik Güç Simgesi: Biceps', text: 'İki başlı (bi-ceps) bu kas dirseği büker ve önkolu dışa çevirir (kapı kolu çevirir gibi). Güç denince herkes onu gösterir ama aslında kolun asıl hacmini arka taraftaki triceps verir.' },
+      { info: 'rectus_abdominis', title: 'Baklavalar: Rectus Abdominis', text: 'Ünlü "six-pack" aslında tek bir kasın, bağ dokusu şeritleriyle bölünmüş hâli. Görevi gövdeyi öne eğmek ve karın içi basıncı yönetmek — öksürürken, gülerken, ıkınırken o çalışır.' },
+      { info: 'gluteus', real: 'Gluteus maximus muscle', title: 'En Büyük Kas: Gluteus Maximus', text: 'Vücudun en büyük kası kalçandadır ve dört ayaklılarda bu kadar gelişmiş değildir. İki ayak üzerinde dik durabilmemiz, merdiven çıkmamız ve koşmamız onun eseri. İnsan olmanın kası diyebiliriz.' },
+      { info: 'quadriceps', real: 'Rectus femoris muscle', title: 'Uyluğun Dört Bacağı: Kuadriseps', text: 'Dört baş tek tendonda birleşip diz kapağı üzerinden bacağı düzeltir. Futbol topuna vurduğundaki patlayıcı güç buradan gelir. Yürüme, ayağa kalkma ve merdiven çıkmada da önemli rol oynar.' },
+      { info: 'gastrocnemius', title: 'İkinci Kalp: Baldır Kası', text: 'Baldır kasları her adımda toplardamarları sıkıştırıp kanı yer çekimine karşı kalbe pompalar — bu yüzden "ikinci kalp" denir. Uzun süre hareketsiz oturunca bacakların şişmesi, bu pompanın durmasındandır. Kas turu bitti, şimdi bir tur yürü de pompan çalışsın! 🎉' },
+    ],
+  },
+  {
+    id: 'bosaltim', icon: '💧', title: 'Boşaltım: Vücudun Arıtma Tesisi',
+    desc: 'Kandan idrara 180 litrelik filtrasyon',
+    steps: [
+      { info: 'aorta', title: 'Kirli Kan Yolda', text: 'Kalbin pompaladığı kanın yaklaşık %20’si doğrudan böbreklere gider — büyüklüklerine göre bu devasa bir paydır (dakikada ~1,2 litre). Amaç: kandaki atık, fazla su ve tuzu ayıklamak.' },
+      { info: 'renal_vessels', real: 'Left renal artery', title: 'Böbrek Damarları', text: 'Kısa ama kalın böbrek atardamarı kanı yüksek basınçla böbreğe taşır; filtrasyonun itici gücü bu basınçtır. Temizlenmiş kan böbrek toplardamarından geri döner. Tansiyon ile böbreğin kadim dostluğu (ve bazen kavgası) buradan gelir.' },
+      { info: 'kidneys', real: 'Kidney', title: 'Böbrekler: Günde 180 Litre Filtre', text: 'Her böbrekte ~1 milyon nefron, günde ~180 litre sıvıyı süzer; %99’u geri emilir, geriye ~1,5 litre idrar kalır. Böbrek ayrıca kan basıncını ve alyuvar üretimini (eritropoetin hormonu) da yönetir — sadece filtre değil, bir yönetim kurulu üyesi.' },
+      { info: 'kidneys', real: 'Ureter', realOnly: true, title: 'Üreterler: Peristaltik Boru Hattı', text: 'Böbrekten mesaneye uzanan 25-30 cm’lik bu borular, idrarı damla damla değil kasılma dalgalarıyla iter — baş aşağı dursan bile akış sürer. Böbrek taşı bu boruda takıldığında oluşan sancı, tıbbın en şiddetli ağrılarındandır.' },
+      { info: 'bladder', real: 'Urinary bladder', title: 'Mesane: Esnek Depo', text: 'Boşken buruşuk bir kese, dolunca ~500 ml alan bir balon. Duvarındaki detrusor kası ve iki sfinkter kapısı sayesinde sosyal hayat mümkün. Gerilme reseptörleri ~250 ml’de beyne ilk "tuvalet yakın olabilir mi?" sinyalini gönderir. Arıtma turu tamam — su içmeyi unutma! 💧' },
+    ],
+  },
+  {
+    id: 'gorme', icon: '👁️', title: 'Görme Yolu: Işıktan Algıya',
+    desc: 'Fotondan beyindeki görüntüye',
+    steps: [
+      { info: 'eye', real: 'Anterior segment of eyeball', title: 'Göz Küresi: Canlı Kamera', text: 'Gözün kırma gücünün üçte ikisini kornea (öndeki saydam pencere) sağlar; mercek sadece ince ayar yapar. Retinadaki 120 milyon çomak ve 6 milyon koni hücresi ışığı sinyale çevirir. Retinada görüntü terstir — düzeltme beyne aittir.' },
+      { info: 'optic_nerve', real: 'Optic nerve (II)', title: 'Görme Siniri', text: '~1,2 milyon liften oluşan bu kablo aslında beynin bir uzantısıdır (periferik sinir değil). Gözden çıktığı noktada fotoreseptör yoktur: o "kör noktayı" beyin, çevresine bakıp uydurarak doldurur — her an biraz fotoşoplu görürsün.' },
+      { info: 'optic_nerve', real: 'Optic chiasm', realOnly: true, title: 'Kiyazma: Liflerin Kavşağı', text: 'Burun tarafı retinadan gelen lifler burada çapraz yapar. Sonuç: sol görme alanın sağ beyinde, sağ görme alanın sol beyinde işlenir. Hipofiz tümörleri buraya bası yaparsa iki yandan "at gözlüğü" gibi görme kaybı olur — nörolojinin klasik ipucu.' },
+      { info: 'brain', real: 'Occipital pole', title: 'Görme Korteksi: Filmin Perdesi', text: 'Sinyaller başın arkasındaki oksipital loba ulaşır. Görmek burada olur: kenarlar, renkler, hareket ayrı ayrı işlenip tek sahneye birleştirilir. Gözler kamera, bu lob ise sinema salonunun ta kendisi. Görme turu bitti — gözlerini kırpmayı unutma! 👁️' },
+    ],
+  },
 ];

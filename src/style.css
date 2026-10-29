@@ -453,3 +453,22 @@ body[data-vtheme="klinik"]{background:
   radial-gradient(1200px 700px at 50% 30%, #1a2f4d 0%, rgba(26,47,77,0) 55%),
   radial-gradient(900px 600px at 85% 90%, rgba(45,212,191,.08), transparent 60%),
   linear-gradient(180deg,#0e1a2e,var(--bg) 75%)}
+
+/* ================= KESIT / YILDIZ / PAYLASIM ================= */
+.bb-clip{display:flex; gap:10px; align-items:end}
+.bb-clip .bb-slider input{width:76px}
+#btnStar.on{background:linear-gradient(135deg,rgba(251,191,36,.28),rgba(251,191,36,.12));
+  border-color:rgba(251,191,36,.6); color:#ffd977}
+.struct-tools{display:flex; gap:6px; margin-bottom:8px}
+.struct-tools input{flex:1; min-width:0}
+.struct-tools #structFilter{margin-bottom:0}
+#starFilter{white-space:nowrap; padding:6px 10px}
+#starFilter.on{background:linear-gradient(135deg,rgba(251,191,36,.28),rgba(251,191,36,.12));
+  border-color:rgba(251,191,36,.6); color:#ffd977}
+.struct-item .star-mark{color:#fbbf24; margin-left:2px; text-shadow:0 0 8px rgba(251,191,36,.6)}
+@media (max-width:880px){
+  .bb-clip{flex-wrap:wrap; justify-content:center; gap:8px}
+  .bb-clip .bb-slider input{width:55px}
+  #bottomBar{max-height:36vh; overflow-y:auto}
+  .info-actions{flex-wrap:wrap}
+}
