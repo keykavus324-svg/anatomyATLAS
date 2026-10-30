@@ -8,6 +8,7 @@ import { loadRealBody, REAL_SYS_ORDER } from './realBody.js';
 import { TOURS } from './tours.js';
 import { createVisiblePickCache, targetOpacity } from './visibility.js';
 import { configurePanControls } from './cameraPan.js';
+import { initialWorkspace, toggleWorkspaceSection, toggleWorkspaceFocus, workspaceForSelection, workspaceForViewport } from './workspace.js';
 import { pick, structureName, translateSystem, tourTitle, tourDesc, tourNote, captureStaticTranslations, arabicNames } from './i18n.js';
 
 const $ = (s) => document.querySelector(s);
@@ -400,7 +401,7 @@ function select(id, { focus = false, ensure = false, side = null } = {}) {
     if (ensure) ensureVisible(id);
     fillInfo(id);
     if (focus) focusStructure(id);
-    if (innerWidth <= 880) { $('#rightPanel').classList.add('open'); $('#leftPanel').classList.remove('open'); }
+    workspace = workspaceForSelection(workspace); syncWorkspace();
   } else {
     els.card.classList.add('hidden'); els.def.classList.remove('hidden');
   }
@@ -851,8 +852,47 @@ document.addEventListener('keydown', (e) => {
   else if (e.key.toLowerCase() === 'r') animateCam(HOME_POS, HOME_TGT, 1.1);
   else if (/^[1-7]$/.test(e.key)) { const sys = M.sysOrder[Number(e.key) - 1]; if (sys) toggleSystem(sys); }
 });
-$('#mbLeft').onclick = () => { $('#leftPanel').classList.toggle('open'); $('#rightPanel').classList.remove('open'); };
-$('#mbRight').onclick = () => { $('#rightPanel').classList.toggle('open'); $('#leftPanel').classList.remove('open'); };
+/* ================= ÇALIŞMA ALANI ================= */
+const workspaceMedia = matchMedia('(max-width: 880px)');
+let workspace = initialWorkspace(workspaceMedia.matches);
+function positionWorkspaceControls() {
+  const toolbar = $('#bottomBar'), controls = $('#mobileBtns');
+  const toolBottom = workspace.mobile ? 10 : 14;
+  const controlsBottom = toolbar.hidden ? 14 : toolbar.getBoundingClientRect().height + toolBottom + 10;
+  document.documentElement.style.setProperty('--workspace-controls-bottom', `${controlsBottom}px`);
+  document.documentElement.style.setProperty('--workspace-panel-bottom', `${controlsBottom + controls.offsetHeight + 8}px`);
+}
+function syncWorkspace() {
+  for (const [key, panelId, buttonId] of [['left', 'leftPanel', 'mbLeft'], ['right', 'rightPanel', 'mbRight'], ['tools', 'bottomBar', 'mbTools']]) {
+    const panel = $('#' + panelId), button = $('#' + buttonId), shown = workspace[key];
+    panel.hidden = !shown;
+    if (key !== 'tools') panel.classList.toggle('open', shown && workspace.mobile);
+    button.setAttribute('aria-expanded', String(shown));
+    button.classList.toggle('active', shown);
+  }
+  const left = $('#mbLeft'), right = $('#mbRight'), tools = $('#mbTools'), focus = $('#mbFocus');
+  left.textContent = tr('☰ Sistemler', '☰ Systems', '☰ الأجهزة');
+  right.textContent = tr('ℹ Bilgi', 'ℹ Info', 'ℹ معلومات');
+  tools.textContent = tr('⚙ Araçlar', '⚙ Tools', '⚙ أدوات');
+  focus.textContent = workspace.focus ? tr('↶ Geri', '↶ Restore', '↶ استعادة') : tr('◉ Odak', '◉ Focus', '◉ تركيز');
+  left.title = workspace.left ? tr('Sistemleri gizle', 'Hide systems', 'إخفاء الأجهزة') : tr('Sistemleri göster', 'Show systems', 'إظهار الأجهزة');
+  right.title = workspace.right ? tr('Bilgi panelini gizle', 'Hide information panel', 'إخفاء لوحة المعلومات') : tr('Bilgi panelini göster', 'Show information panel', 'إظهار لوحة المعلومات');
+  tools.title = workspace.tools ? tr('Araç çubuğunu gizle', 'Hide toolbar', 'إخفاء شريط الأدوات') : tr('Araç çubuğunu göster', 'Show toolbar', 'إظهار شريط الأدوات');
+  focus.title = workspace.focus ? tr('Önceki panelleri geri getir', 'Restore previous panels', 'استعادة اللوحات السابقة') : tr('Odak modu: panelleri gizle', 'Focus mode: hide panels', 'وضع التركيز: إخفاء اللوحات');
+  for (const button of [left, right, tools, focus]) button.setAttribute('aria-label', button.title);
+  focus.setAttribute('aria-pressed', String(workspace.focus));
+  focus.classList.toggle('active', workspace.focus);
+  $('#app').classList.toggle('focus-mode', workspace.focus);
+  positionWorkspaceControls();
+}
+for (const [id, key] of [['mbLeft', 'left'], ['mbRight', 'right'], ['mbTools', 'tools']]) {
+  $('#' + id).onclick = () => { workspace = toggleWorkspaceSection(workspace, key); syncWorkspace(); };
+}
+$('#mbFocus').onclick = () => { workspace = toggleWorkspaceFocus(workspace); syncWorkspace(); };
+workspaceMedia.addEventListener('change', (event) => { workspace = workspaceForViewport(workspace, event.matches); syncWorkspace(); });
+addEventListener('resize', positionWorkspaceControls);
+if ('ResizeObserver' in window) new ResizeObserver(positionWorkspaceControls).observe($('#bottomBar'));
+syncWorkspace();
 
 /* ================= ETİKETLER ================= */
 const LABEL_INFO_IDS = ['brain', 'cerebellum', 'cranium', 'mandible', 'eye', 'trachea', 'lungs', 'heart', 'aorta',
@@ -1362,7 +1402,7 @@ function setLanguage(value) {
   languageNotice.classList.toggle('hidden', lang === 'tr');
   if (activeLayer) { const button = $(`#layerSeg button[data-layer="${activeLayer}"]`); if (button) button.classList.add('active'); $('#layerName').textContent = layerName(activeLayer); }
   else markLayerCustom();
-  setFasciaVisibility(state.showFascia); syncPan(); syncIsolateBtn(); syncStarUI();
+  setFasciaVisibility(state.showFascia); syncPan(); syncIsolateBtn(); syncStarUI(); syncWorkspace();
   if (state.selected) fillInfo(state.selected);
   if (tourState.active) renderTourText();
   renderQuizText(); randomFact();

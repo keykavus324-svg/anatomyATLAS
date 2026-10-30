@@ -17,6 +17,10 @@ Modeli sağ fare tuşuyla sürükleyerek veya **Kaydır** düğmesini açıp sol
 sürükleyerek yukarı, aşağı ve yanlara taşıyın. Dokunmatik ekranda iki parmakla
 sürükleyebilir veya Kaydır modunda tek parmak kullanabilirsiniz.
 
+Panelleri **Sistemler**, **Bilgi** ve **Araçlar** düğmeleriyle ayrı ayrı
+kapatıp açabilirsiniz. **Odak** modu tümünü geçici gizler; **Geri** önceki
+panel düzenini geri getirir. Seçili yapı ve kamera konumu korunur.
+
 ## Özellikler
 
 - 🔍 **1.643 yapı için arama** — Türkçe, İngilizce veya Latince (örn. `öçb`,

@@ -669,3 +669,17 @@ html[dir="rtl"] .sys-name{text-align:right!important}
 .language-notice{margin:8px 14px 0}.translation-notice{margin:10px 0}
 @media(max-width:360px){#bottomBar .toggles button{font-size:10px;padding:6px 4px}}
 #localizedSummary{line-height:1.7;margin:10px 0;color:#efe2ce}
+
+/* Paneller, araç çubuğu ve dikkat dağıtmayan odak görünümü. */
+#leftPanel[hidden],#rightPanel[hidden],#bottomBar[hidden]{display:none!important}
+#mobileBtns{display:flex;position:absolute;left:50%;transform:translateX(-50%);bottom:var(--workspace-controls-bottom,155px);z-index:56;gap:5px;white-space:nowrap;max-width:calc(100vw - 20px)}
+#mobileBtns button{display:inline-flex;align-items:center;justify-content:center;background:rgba(23,34,28,.95);border:1px solid rgba(221,201,172,.25);backdrop-filter:blur(14px);border-radius:20px;padding:7px 11px;color:#d6d9cc;font-size:11px;font-weight:700;line-height:1.2;transition:background .18s,border-color .18s,color .18s}
+#mobileBtns button:hover,#mobileBtns button.active{background:#344238;border-color:rgba(224,195,153,.55);color:#f6e9d4}
+#mobileBtns button:focus-visible{outline:2px solid #e5c79d;outline-offset:2px}
+.focus-mode .atlas-marginalia,.focus-mode #modelCredit{display:none}
+@media(max-width:880px){
+  #mobileBtns{bottom:var(--workspace-controls-bottom,122px);gap:4px}
+  #mobileBtns button{font-size:10.5px;padding:7px 8px}
+  #leftPanel,#rightPanel{bottom:var(--workspace-panel-bottom,162px)}
+}
+@media(max-width:360px){#mobileBtns{gap:3px}#mobileBtns button{font-size:9.5px;padding:7px 6px}}

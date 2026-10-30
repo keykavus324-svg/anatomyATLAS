@@ -194,3 +194,39 @@ test('kamera kaydırma modu fare ve dokunmatik hareketlerini eşler', async () =
   assert.equal(controls.touches.ONE, TOUCH.PAN);
   assert.equal(controls.touches.TWO, TOUCH.DOLLY_PAN);
 });
+
+test('odak modu panelleri gizler ve önceki yerleşimi geri getirir', async () => {
+  const { initialWorkspace, toggleWorkspaceSection, toggleWorkspaceFocus, workspaceForSelection, workspaceForViewport } = await import('../src/workspace.js');
+  let state = initialWorkspace(false);
+  assert.deepEqual([state.left, state.right, state.tools], [true, true, true]);
+  state = toggleWorkspaceSection(state, 'right');
+  const saved = state;
+  state = toggleWorkspaceFocus(state);
+  assert.deepEqual([state.left, state.right, state.tools, state.focus], [false, false, false, true]);
+  assert.equal(workspaceForSelection(state), state);
+  state = toggleWorkspaceFocus(state);
+  assert.deepEqual([state.left, state.right, state.tools], [saved.left, saved.right, saved.tools]);
+  state = workspaceForViewport(state, true);
+  assert.deepEqual([state.left, state.right, state.tools], [false, false, true]);
+  state = toggleWorkspaceSection(state, 'left');
+  state = workspaceForSelection(state);
+  assert.deepEqual([state.left, state.right], [false, true]);
+  state = toggleWorkspaceFocus(state);
+  assert.equal(workspaceForSelection(state).right, false);
+  state = toggleWorkspaceFocus(state);
+  assert.deepEqual([state.left, state.right, state.tools], [false, true, true]);
+  state = toggleWorkspaceFocus(state);
+  state = workspaceForViewport(state, false);
+  assert.deepEqual([state.left, state.right, state.tools, state.focus], [false, false, false, true]);
+  state = toggleWorkspaceSection(state, 'tools');
+  assert.deepEqual([state.left, state.right, state.tools, state.focus], [false, false, true, false]);
+});
+
+
+test('panel düğmeleri erişilebilir ve geri açılabilir', () => {
+  const html = readFileSync('index.html', 'utf8');
+  for (const [button, panel] of [['mbLeft', 'leftPanel'], ['mbRight', 'rightPanel'], ['mbTools', 'bottomBar']]) {
+    assert.match(html, new RegExp(`id="${button}"[^>]*aria-controls="${panel}"[^>]*aria-expanded=`));
+  }
+  assert.match(html, /id="mbFocus"[^>]*aria-pressed="false"/);
+});

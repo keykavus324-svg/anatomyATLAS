@@ -328,11 +328,13 @@
 
   <div id="toast" class="hidden"></div>
 
-  <!-- MOBİL PANEL DÜĞMELERİ -->
-  <div id="mobileBtns">
-    <button id="mbLeft">☰ Sistemler</button>
-    <button id="mbRight">ℹ Bilgi</button>
-  </div>
+  <!-- Paneller ve araç çubuğu her ekranda yeniden açılabilir. -->
+  <nav id="mobileBtns" aria-label="Görünüm panelleri">
+    <button id="mbLeft" type="button" aria-controls="leftPanel" aria-expanded="true">☰ Sistemler</button>
+    <button id="mbRight" type="button" aria-controls="rightPanel" aria-expanded="true">ℹ Bilgi</button>
+    <button id="mbTools" type="button" aria-controls="bottomBar" aria-expanded="true">⚙ Araçlar</button>
+    <button id="mbFocus" type="button" aria-pressed="false">◉ Odak</button>
+  </nav>
 
   <!-- GİRİŞ EKRANI -->
   <div id="intro">

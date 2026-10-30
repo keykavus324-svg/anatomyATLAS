@@ -26,7 +26,7 @@ const UI = {
 };
 const attributes = {
 'Yapı ara…  (örn. femur, kalp, siyatik, aorta)':['Search structures… (e.g. femur, heart)','ابحث عن تركيب… (مثل القلب أو عظم الفخذ)'],
-'Listede filtrele…':['Filter list…','تصفية القائمة…'], 'Kaynaklar ve lisanslar':['Sources and licences','المصادر والتراخيص'], 'Ekran görüntüsü indir (arkadaşına gönder 😉)':['Download screenshot','تنزيل لقطة الشاشة'], 'Tam ekran':['Full screen','ملء الشاشة'], 'Sınav Modu':['Quiz mode','وضع الاختبار'],
+'Görünüm panelleri':['View panels','لوحات العرض'], 'Listede filtrele…':['Filter list…','تصفية القائمة…'], 'Kaynaklar ve lisanslar':['Sources and licences','المصادر والتراخيص'], 'Ekran görüntüsü indir (arkadaşına gönder 😉)':['Download screenshot','تنزيل لقطة الشاشة'], 'Tam ekran':['Full screen','ملء الشاشة'], 'Sınav Modu':['Quiz mode','وضع الاختبار'],
 'Kasları örten fasya katmanını göster veya gizle':['Show or hide fascia','إظهار أو إخفاء اللفافة'], 'Görüntü kalitesi':['Image quality','جودة الصورة'], 'Kamera görünümü':['Camera view','منظور الكاميرا'],'Kesit düzlemleri':['Section planes','مستويات القطع'],'Aksiyal kesit':['Axial section','مقطع محوري'],'Sagital kesit':['Sagittal section','مقطع سهمي'],'Koronal kesit':['Coronal section','مقطع إكليلي'],
 'Sadece yıldızlı (çalışma listesi) yapıları göster':['Show favourites only','عرض المفضلة فقط'],'Çalışma listeme ekle':['Add to favourites','أضف إلى المفضلة'],'Turdan çık (Esc)':['Exit tour (Esc)','الخروج من الجولة (Esc)'],'Yeni bilgi':['New fact','معلومة جديدة'],'Kapat':['Close','إغلاق'],'Bu görünümün (kamera + seçim + katman + tema) linkini kopyala':['Copy a link to this view','نسخ رابط هذا المنظور'],'Proje sahibi, kaynaklar ve lisanslar':['Project creator, sources and licences','صاحب المشروع والمصادر والتراخيص'],
 };
