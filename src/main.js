@@ -8,6 +8,7 @@ import { INFO, SYSTEMS } from './data.js';
 import { buildBody } from './body.js';
 import { loadRealBody, REAL_SYS_ORDER } from './realBody.js';
 import { TOURS } from './tours.js';
+import { createVisiblePickCache, targetOpacity } from './visibility.js';
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => [...document.querySelectorAll(s)];
@@ -17,7 +18,10 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 /* ================= SAHNE ================= */
 const stage = $('#stage');
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+// DPR üst sınırı kullanıcı tarafından değiştirilebilir; geometri değiştirilmez.
+const QUALITY_CAP = { balanced: 1, high: 2 };
+let graphicsQuality = (() => { try { const q = localStorage.getItem('corpus-quality'); return QUALITY_CAP[q] ? q : 'high'; } catch { return 'high'; } })();
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, QUALITY_CAP[graphicsQuality]));
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -42,7 +46,7 @@ controls.minDistance = .8; controls.maxDistance = 30;
 controls.maxPolarAngle = 1.66;
 controls.autoRotate = true; controls.autoRotateSpeed = .8;
 
-const hemi = new THREE.HemisphereLight(0xbfd9ff, 0x241408, .55); scene.add(hemi);
+const hemi = new THREE.HemisphereLight(0xf4e9dc, 0x2c2420, .55); scene.add(hemi);
 const key = new THREE.DirectionalLight(0xffffff, 2.4);
 key.position.set(6, 13, 7); key.castShadow = true;
 key.shadow.mapSize.set(2048, 2048);
@@ -50,24 +54,24 @@ key.shadow.camera.left = -7; key.shadow.camera.right = 7;
 key.shadow.camera.top = 13; key.shadow.camera.bottom = -3;
 key.shadow.camera.far = 40; key.shadow.bias = -.0006; key.shadow.normalBias = .02;
 scene.add(key);
-const rim = new THREE.DirectionalLight(0x37c8ff, 1.5); rim.position.set(-8, 6, -9); scene.add(rim);
-const fill = new THREE.DirectionalLight(0xffd9b0, .5); fill.position.set(-6, 3, 9); scene.add(fill);
+const rim = new THREE.DirectionalLight(0xd4c7b5, 1.5); rim.position.set(-8, 6, -9); scene.add(rim);
+const fill = new THREE.DirectionalLight(0xffe8da, .5); fill.position.set(-6, 3, 9); scene.add(fill);
 
 /* hologram masası */
 {
   const disc = new THREE.Mesh(new THREE.CylinderGeometry(2.9, 3.05, .12, 64),
-    new THREE.MeshStandardMaterial({ color: 0x0c1626, roughness: .35, metalness: .65 }));
+    new THREE.MeshStandardMaterial({ color: 0x292723, roughness: .72, metalness: .15 }));
   disc.position.y = -.06; disc.receiveShadow = true; scene.add(disc);
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(2.9, .018, 8, 90), new THREE.MeshBasicMaterial({ color: 0x22d3ee }));
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(2.9, .018, 8, 90), new THREE.MeshBasicMaterial({ color: 0xb1936b }));
   ring.rotation.x = Math.PI / 2; ring.position.y = .004; scene.add(ring);
-  const polar = new THREE.PolarGridHelper(2.82, 12, 5, 48, 0x1e4a66, 0x16344d);
+  const polar = new THREE.PolarGridHelper(2.82, 12, 5, 48, 0x62584c, 0x4a423b);
   polar.position.y = .008; polar.material.transparent = true; polar.material.opacity = .5; scene.add(polar);
   const shadowPlane = new THREE.Mesh(new THREE.PlaneGeometry(90, 90), new THREE.ShadowMaterial({ opacity: .32 }));
   shadowPlane.rotation.x = -Math.PI / 2; shadowPlane.position.y = -.13; shadowPlane.receiveShadow = true; scene.add(shadowPlane);
   const c = document.createElement('canvas'); c.width = c.height = 256;
   const g = c.getContext('2d');
   const grad = g.createRadialGradient(128, 128, 8, 128, 128, 128);
-  grad.addColorStop(0, 'rgba(34,211,238,.30)'); grad.addColorStop(.55, 'rgba(34,211,238,.08)'); grad.addColorStop(1, 'rgba(34,211,238,0)');
+  grad.addColorStop(0, 'rgba(209,167,115,.16)'); grad.addColorStop(.55, 'rgba(209,167,115,.05)'); grad.addColorStop(1, 'rgba(34,211,238,0)');
   g.fillStyle = grad; g.fillRect(0, 0, 256, 256);
   const glow = new THREE.Mesh(new THREE.CircleGeometry(5.2, 48),
     new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
@@ -88,7 +92,7 @@ const fill = new THREE.DirectionalLight(0xffd9b0, .5); fill.position.set(-6, 3, 
     pos[i * 3] = Math.cos(a) * r; pos[i * 3 + 1] = Math.random() * 13 - .5; pos[i * 3 + 2] = Math.sin(a) * r;
   }
   const dg = new THREE.BufferGeometry(); dg.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  const dust = new THREE.Points(dg, new THREE.PointsMaterial({ color: 0x86c5ff, size: .04, transparent: true, opacity: .45, depthWrite: false }));
+  const dust = new THREE.Points(dg, new THREE.PointsMaterial({ color: 0xb6ab9c, size: .025, transparent: true, opacity: .22, depthWrite: false }));
   dust.name = 'dust'; scene.add(dust);
 }
 
@@ -120,6 +124,7 @@ function wrapModel(kind, built, extra = {}) {
     kind,
     root: built.body || built.root,
     parts: built.parts, structures: built.structures, pickMeshes: built.pickMeshes,
+    pickCache: createVisiblePickCache(built.pickMeshes),
     flows: built.flows || [], animated: built.animated || null,
     db: extra.db, ids: extra.ids, sysOrder: extra.sysOrder, layers: extra.layers,
     defaultLayer: extra.defaultLayer,
@@ -176,19 +181,19 @@ prepareModel(PM);
    Renk doygunlugu/acikligi + puruzluluk + studo isiklari hep birlikte
    sekillenir. Varsayilan "Gercekci": derin doku renkleri, islak parlama. */
 const VISUAL_THEMES = {
-  atlas:     { label: 'Atlas',     sat: -.04, light: .02,  roughF: 1,    exposure: 1.08, env: .55, hemi: .55, keyI: 2.4, rimI: 1.5, fillI: .5 },
-  gercekci:  { label: 'Gerçekçi',  sat: .14,  light: -.07, roughF: .82,  exposure: 1.02, env: .70, hemi: .42, keyI: 2.6, rimI: 1.9, fillI: .45 },
-  sinematik: { label: 'Sinematik', sat: .06,  light: -.14, roughF: 1.05, exposure: .98,  env: .40, hemi: .22, keyI: 2.9, rimI: 2.6, fillI: .22 },
-  klinik:    { label: 'Klinik',    sat: -.34, light: .12,  roughF: 1.25, exposure: 1.16, env: .65, hemi: .75, keyI: 2.1, rimI: .9,  fillI: .7 },
+  atlas:     { label: 'Atlas',     sat: -.05, light: .015, roughF: 1,    exposure: 1.03, env: .55, hemi: .65, keyI: 2.15, rimI: .8, fillI: .65 },
+  gercekci:  { label: 'Gerçekçi',  sat: .01,  light: -.01, roughF: 1,    exposure: .98,  env: .55, hemi: .55, keyI: 2.3, rimI: 1, fillI: .6 },
+  sinematik: { label: 'Sinematik', sat: .02,  light: -.06, roughF: 1.05, exposure: .95,  env: .4,  hemi: .3, keyI: 2.4, rimI: 1.65, fillI: .3 },
+  klinik:    { label: 'Klinik',    sat: -.15, light: .055, roughF: 1.1,  exposure: 1.1,  env: .65, hemi: .85, keyI: 1.9, rimI: .7, fillI: .8 },
 };
 let visualTheme = (() => { try { const t = localStorage.getItem('corpus-theme'); return VISUAL_THEMES[t] ? t : 'gercekci'; } catch { return 'gercekci'; } })();
 // sistem bazinda baz duzeltmeler (her temanin altinda uygulanir)
 const SYS_GRADE = {
-  bone:   { ds: -.22, dl: .05 },
+  bone:   { ds: -.18, dl: .07 },
   joint:  { ds: -.10, dl: .03 },
-  muscle: { ds: .05,  dl: -.02 },
-  organ:  { ds: .03,  dl: -.02 },
-  vessel: { ds: .06,  dl: -.02 },
+  muscle: { ds: 0,    dl: 0 },
+  organ:  { ds: 0,    dl: 0 },
+  vessel: { ds: 0,    dl: 0 },
   lymph:  { ds: 0,    dl: -.01 },
   nerve:  { ds: -.05, dl: 0 },
 };
@@ -220,9 +225,21 @@ function applyVisualTheme(name, { announce = false } = {}) {
 }
 $$('#themeSeg button').forEach((b) => b.onclick = () => applyVisualTheme(b.dataset.vtheme, { announce: true }));
 applyVisualTheme(visualTheme);
+function applyGraphicsQuality(value) {
+  graphicsQuality = QUALITY_CAP[value] ? value : 'high';
+  try { localStorage.setItem('corpus-quality', graphicsQuality); } catch {}
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, QUALITY_CAP[graphicsQuality]));
+  renderer.setSize(innerWidth, innerHeight);
+  $$('#qualitySeg button').forEach((b) => {
+    const active = b.dataset.quality === graphicsQuality;
+    b.classList.toggle('active', active); b.setAttribute('aria-pressed', String(active));
+  });
+}
+$$('#qualitySeg button').forEach((b) => b.addEventListener('click', () => applyGraphicsQuality(b.dataset.quality)));
+applyGraphicsQuality(graphicsQuality);
 
 /* ================= DURUM ================= */
-const tourState = { active: null, idx: 0 };
+const tourState = { active: null, idx: 0, isolatedId: null, savedClips: null, clipEdited: false };
 // Favoriler iki model için ayrı tutulur; aynı kimlik farklı yapılar anlamına gelebilir.
 const STAR_KEY = 'corpus-stars-v1';
 let stars = { real: [], proc: [] };
@@ -234,12 +251,10 @@ try {
 let starsOnly = false;
 const state = {
   selected: null, lastSide: null, hovered: null, isolate: null, override: null,
-  xray: false, labels: false, spin: true, explode: 0,
+  xray: false, labels: false, spin: true, explode: 0, showFascia: false,
 };
 function targetFor(id) {
-  if (state.isolate) return id === state.isolate ? 1 : .07;
-  if (state.override) return state.override.get(id) ?? 0;
-  return M.systems[M.db[id].system] ?? 0;
+  return targetOpacity(id, M.db[id].system, state, M.systems);
 }
 function dbGet(id) { return M.db[id]; }
 
@@ -348,7 +363,7 @@ function fillInfo(id) {
   els.name.textContent = d.name;
   els.latin.textContent = d.latin || '';
   els.latin.style.display = d.latin ? '' : 'none';
-  if (M.kind === 'real') { els.en.textContent = 'Z-Anatomy: ' + d.en; els.en.classList.remove('hidden'); }
+  if (M.kind === 'real') { els.en.textContent = 'İngilizce: ' + d.en; els.en.classList.remove('hidden'); }
   else els.en.classList.add('hidden');
   els.desc.textContent = d.desc || '';
   els.funcsWrap.style.display = d.funcs && d.funcs.length ? '' : 'none';
@@ -366,6 +381,8 @@ function fillInfo(id) {
   els.card.style.animation = 'none'; void els.card.offsetWidth; els.card.style.animation = '';
 }
 function select(id, { focus = false, ensure = false, side = null } = {}) {
+  // Arama/turla fasyanın kendisi seçilirse kullanıcıdan gizli kalmasın.
+  if (id && M.kind === 'real' && !state.showFascia && M.structures.get(id)?.parts.every((p) => p.isFascia)) setFasciaVisibility(true);
   state.selected = id;
   state.lastSide = side;
   if (id) {
@@ -572,7 +589,7 @@ function buildStructList() {
   let listedIds = M.ids;
   if (M.kind === 'real') {
     listedIds = M.ids.filter((id) => M.db[id].tr || isStarred(id));
-    note.textContent = `Z-Anatomy'de toplam ${M.meta.entryCount} benzersiz yapı (${M.meta.meshCount} parça) var. Burada Türkçe adı/içeriği olan ${listedIds.length} yapı listelenir; geri kalanına üstteki aramayla (Türkçe/İngilizce/Latince) ulaşabilirsiniz.`;
+    note.textContent = `Atlas içinde toplam ${M.meta.entryCount} benzersiz yapı (${M.meta.meshCount} mesh) var. Burada Türkçe adı/içeriği olan ${listedIds.length} yapı listelenir; geri kalanına üstteki aramayla (Türkçe/İngilizce/Latince) ulaşabilirsiniz.`;
     note.classList.remove('hidden');
   } else note.classList.add('hidden');
   for (const sys of M.sysOrder) {
@@ -617,7 +634,7 @@ $$('.tab').forEach((t) => t.onclick = () => {
 function updateStats() {
   if (M.kind === 'real') {
     $('#stYapı').textContent = M.meta.meshCount;
-    $('#stYapıLabel').textContent = `parça · ${M.meta.entryCount} yapı`;
+    $('#stYapıLabel').textContent = `mesh · ${M.meta.entryCount} yapı`;
     $('#stUcuncu').textContent = M.ids.filter((id) => M.db[id].tr).length;
     $('#stUcuncuLabel').textContent = 'Türkçe içerikli yapı';
   } else {
@@ -681,14 +698,30 @@ function updateClips() {
     plane.constant = Number(input.value) === 100 ? 100 : min + Number(input.value) / 100 * span;
   }
 }
-for (const [input] of clipControls) input.addEventListener('input', updateClips);
+for (const [input] of clipControls) input.addEventListener('input', () => {
+  if (tourState.active) tourState.clipEdited = true;
+  updateClips();
+});
 syncRange(rngExplode); updateClips();
+
+function setFasciaVisibility(show) {
+  state.showFascia = show;
+  const button = $('#fasciaToggle');
+  button.classList.toggle('on', show);
+  button.setAttribute('aria-pressed', String(show));
+  button.textContent = `Fasya katmanı: ${show ? 'Görünür' : 'Gizli'}`;
+  if (M.kind === 'real') {
+    for (const [id, st] of M.structures) if (st.parts.some((p) => p.isFascia)) applyEntryFade(id, M.fade.get(id) ?? 0);
+  }
+}
+$('#fasciaToggle').onclick = () => setFasciaVisibility(!state.showFascia);
 
 function applyEntryFade(id, cur) {
   const st = M.structures.get(id);
   if (!st) return;
   for (const p of st.parts) {
-    p.group.visible = cur > .02;
+    const visible = cur > .02 && !(M.kind === 'real' && p.isFascia && !state.showFascia);
+    if (p.group.visible !== visible) { p.group.visible = visible; M.pickCache.invalidate(); }
     if (!p.group.visible) continue;
     const cast = cur > .85 && !state.xray && M.kind === 'proc';
     for (const mesh of p.meshes) mesh.castShadow = cast;
@@ -736,6 +769,7 @@ function resetAll() {
   rngExplode.value = 0; state.explode = 0; syncRange(rngExplode); applyExplode();
   for (const [input] of clipControls) input.value = 100;
   updateClips();
+  setFasciaVisibility(false);
   applyLayer(M.defaultLayer);
   animateCam(HOME_POS, HOME_TGT, 1.2);
 }
@@ -786,7 +820,7 @@ const tooltip = $('#tooltip');
 function castAt(clientX, clientY) {
   pointerNDC.set((clientX / innerWidth) * 2 - 1, -(clientY / innerHeight) * 2 + 1);
   raycaster.setFromCamera(pointerNDC, camera);
-  const hits = raycaster.intersectObjects(M.pickMeshes, false);
+  const hits = raycaster.intersectObjects(M.pickCache.get(), false);
   for (const h of hits) {
     let o = h.object, shown = true;
     while (o) { if (!o.visible) { shown = false; break; } o = o.parent; }
@@ -966,8 +1000,15 @@ function startTour(id) {
   const t = TOURS.find((x) => x.id === id);
   if (!t) return;
   if (quiz.active) endQuiz();
+  if (tourState.active) exitTour();
   tourState.active = t;
   tourState.idx = 0;
+  // Kesit düzlemleri hedef yapıyı kesiyorsa ders boş görünür. Tur boyunca
+  // kesitleri aç; kullanıcı değiştirmediyse çıkışta eski değerleri geri koy.
+  tourState.savedClips = clipControls.map(([input]) => input.value);
+  tourState.clipEdited = false;
+  for (const [input] of clipControls) input.value = 100;
+  updateClips();
   $('#tourPanel').classList.remove('hidden');
   applyTourStep();
   toast(`🎓 "${t.title}" turu başladı — ←/→ tuşlarıyla da gezinebilirsin.`);
@@ -977,8 +1018,12 @@ function applyTourStep() {
   if (!t) return;
   const step = t.steps[tourState.idx];
   const id = M.kind === 'proc' && step.realOnly ? null : tourStepId(step);
-  if (id) select(id, { focus: true, ensure: true });
-  else select(null);
+  if (tourState.isolatedId && state.isolate === tourState.isolatedId) state.isolate = null;
+  tourState.isolatedId = null;
+  if (id) {
+    select(id, { focus: true, ensure: true });
+    state.isolate = id; tourState.isolatedId = id; syncIsolateBtn();
+  } else select(null);
   $('#tourIcon').textContent = t.icon;
   $('#tourTitle').textContent = t.title;
   $('#tourCounter').textContent = `Adım ${tourState.idx + 1}/${t.steps.length}`;
@@ -1002,6 +1047,15 @@ function stepTour(dir) {
   applyTourStep();
 }
 function exitTour() {
+  if (tourState.isolatedId && state.isolate === tourState.isolatedId) {
+    state.isolate = null; syncIsolateBtn();
+  }
+  tourState.isolatedId = null;
+  if (tourState.savedClips && !tourState.clipEdited) {
+    clipControls.forEach(([input], i) => { input.value = tourState.savedClips[i]; });
+    updateClips();
+  }
+  tourState.savedClips = null;
   tourState.active = null;
   $('#tourPanel').classList.add('hidden');
 }
@@ -1040,6 +1094,7 @@ function startQuiz(cat) {
     return cat === 'organ' ? (c === 'organ' || c === 'vessel') : c === cat;
   });
   if (!pool.length) { toast(cat === 'stars' ? 'Önce bu modelde bir yapıyı yıldızla.' : 'Bu kategoride sınav sorusu bulunamadı.', 'bad'); $('#quizSetup').classList.remove('hidden'); return; }
+  if (tourState.active) exitTour();
   for (const [input] of clipControls) input.value = 100;
   updateClips();
   if (state.xray) $('#tgXray').click();
@@ -1078,6 +1133,7 @@ function startQuiz(cat) {
 function setQuestion() {
   select(null);
   const id = quiz.qs[quiz.idx];
+  if (M.kind === 'real' && !state.showFascia && M.structures.get(id)?.parts.every((p) => p.isFascia)) setFasciaVisibility(true);
   if (quiz.cat === 'stars') {
     // Hedef sistemi görünür kıl; iç yapıları örten diğer sistemleri kaldır.
     setSystems({ [M.db[id].system]: 1 });
@@ -1149,7 +1205,7 @@ function finishQuiz() {
   $('#resultTitle').textContent = title;
   $('#resultScore').textContent = quiz.score;
   $('#resultDetail').textContent =
-    `${total} soruda ${quiz.correct} doğru · En uzun seri: ${quiz.best} · Kategori: ${CAT_LABEL[quiz.cat]}${M.kind === 'real' ? ' · Gerçek Atlas (Z-Anatomy)' : ''}`;
+    `${total} soruda ${quiz.correct} doğru · En uzun seri: ${quiz.best} · Kategori: ${CAT_LABEL[quiz.cat]}${M.kind === 'real' ? ' · Gerçek Atlas' : ''}`;
   $('#quizResult').classList.remove('hidden');
   quiz.finalTitle = title;
 }
@@ -1166,10 +1222,9 @@ $('#btnChallenge').onclick = async () => {
 function updateCredit() {
   const c = $('#modelCredit');
   c.classList.remove('hidden');
-  c.innerHTML = M.kind === 'real'
-    ? 'Model: <b>Z-Anatomy / BodyParts3D</b> (CC BY-SA · bazı parçalar CC BY-NC-SA) · glTF: nqwrc/3d-anatomy — ayrıntılar için üstteki ⓘ'
-    : 'Model: <b>CORPUS Stilize</b> — prosedürel canlı simülasyon (atan kalp, solunum, akış)';
+  c.innerHTML = 'Bir <b>Muhammet TUĞRUL</b> projesi<br>Kaynaklar ve lisanslar ⓘ';
 }
+$('#modelCredit').onclick = () => $('#creditsModal').classList.remove('hidden');
 function rebuildModelUI() {
   buildLayerSeg();
   buildSystemRows();
@@ -1185,10 +1240,11 @@ function setMode(kind) {
   select(null);
   state.hovered = null; state.isolate = null; state.override = null;
   highlighted.clear(); flashState.clear();
-  PM.root.visible = kind === 'proc';
-  if (RM) RM.root.visible = kind === 'real';
+  PM.root.visible = kind === 'proc'; PM.pickCache.invalidate();
+  if (RM) { RM.root.visible = kind === 'real'; RM.pickCache.invalidate(); }
   M = kind === 'proc' ? PM : RM;
   if (contactBlob) contactBlob.visible = kind === 'real';
+  $('#fasciaToggle').hidden = kind !== 'real';
   rngExplode.value = 0; state.explode = 0; syncRange(rngExplode);
   rebuildModelUI();
   applyLayer(M.defaultLayer);
@@ -1199,9 +1255,9 @@ function setMode(kind) {
 $$('#modeSeg button').forEach((b) => b.onclick = () => {
   if (b.dataset.mode === M.kind) return;
   setMode(b.dataset.mode);
-  animateCam(HOME_POS, HOME_TGT, 1.2);
+  if (!tourState.active) animateCam(HOME_POS, HOME_TGT, 1.2);
   toast(M.kind === 'real'
-    ? '🫀 Gerçek Atlas: açık kaynak Z-Anatomy üzerinde 2.827 yapı — tıklayıp keşfedin!'
+    ? `🫀 Gerçek Atlas: ${M.meta.entryCount} yapı — tıklayıp keşfedin!`
     : '🎨 Stilize Model: atan kalp ve akan kan simülasyonu aktif.');
 });
 
@@ -1214,7 +1270,7 @@ function snapshotView() {
   return { v: 1, mode: M.kind, theme: visualTheme, camera: camera.position.toArray(), target: controls.target.toArray(),
     systems: M.systems, selected: state.selected, side: state.lastSide, isolate: state.isolate,
     override: state.override ? [...state.override] : null, clips: clipControls.map(([el]) => +el.value),
-    explode: +rngExplode.value, xray: state.xray, labels: state.labels };
+    explode: +rngExplode.value, xray: state.xray, labels: state.labels, fascia: state.showFascia };
 }
 $('#btnShare').onclick = async () => {
   const view = snapshotView(); if (!view) return;
@@ -1230,6 +1286,7 @@ function restoreView() {
     if (data.v !== 1 || !['real', 'proc'].includes(data.mode) || !vec(data.camera) || !vec(data.target)) throw Error('Geçersiz bağlantı');
     if (data.mode === 'real' && !RM) { toast('Bağlantıdaki gerçek atlas yüklenemedi.', 'bad'); return false; }
     setMode(data.mode);
+    setFasciaVisibility(!!data.fascia);
     if (VISUAL_THEMES[data.theme]) applyVisualTheme(data.theme);
     if (data.systems && typeof data.systems === 'object') {
       for (const sys of M.sysOrder) {
@@ -1386,6 +1443,7 @@ tick();
 addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, QUALITY_CAP[graphicsQuality]));
   renderer.setSize(innerWidth, innerHeight);
 });
 
@@ -1400,7 +1458,7 @@ addEventListener('resize', () => {
       $('#intro').classList.add('done');
       if (!restoreView()) animateCam(HOME_POS, HOME_TGT, 1.9);
       setTimeout(() => toast(M.kind === 'real'
-        ? '👋 HOŞ GELDİNİZ! Açık kaynak Z-Anatomy atlasındasınız — 2.827 gerçek yapı sizi bekliyor. Bir kasa tıklayın!'
+        ? `👋 HOŞ GELDİNİZ! CORPUS·3D içinde ${M.meta.entryCount} yapı sizi bekliyor. Bir kasa tıklayın!`
         : '👋 HOŞ GELDİNİZ! Bir kasa tıklayın ya da "İç Yapılar" katmanına geçip atan kalbi izleyin.'), 1300);
     }, wait);
   };
@@ -1415,11 +1473,11 @@ addEventListener('resize', () => {
     scene.add(RM.root);
     prepareModel(RM);
     applyVisualTheme(visualTheme);
-    console.log(`Z-Anatomy hazır: ${built.meta.meshCount} parça, ${built.meta.entryCount} yapı.`);
+    console.log(`Gerçek atlas hazır: ${built.meta.meshCount} parça, ${built.meta.entryCount} yapı.`);
     setMode('real');
     finishIntro();
   }).catch((err) => {
-    console.error('Z-Anatomy yüklenemedi:', err);
+    console.error('Gerçek atlas yüklenemedi:', err);
     msg.textContent = 'Gerçek atlas yüklenemedi — stilize modelle devam ediliyor.';
     finishIntro();
     setTimeout(() => toast('⚠️ Gerçek atlas yüklenemedi; stilize model aktif. Bağlantınızı kontrol edip yenileyin.', 'bad'), 1600);

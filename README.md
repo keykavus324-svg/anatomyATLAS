@@ -1,14 +1,13 @@
 # CORPUS·3D — İnteraktif Anatomi Atlası 🫀
 
-> "Arkadaşım MacBook'undaki anatomi uygulamasıyla hava attı" diyenler için, cevap:
-> açık kaynak **Z-Anatomy**'nin 2.827 parçalı gerçek insan modelini alıp üzerine
-> Türkçe arayüz + sınav oyunu + canlı vital simülasyonu giydirdik.
+> **Muhammet TUĞRUL** tarafından geliştirilen Türkçe, etkileşimli 3B anatomi atlası.
+> Katmanlar, rehberli dersler ve sınavlarla insan vücudunu keşfedin.
 
 ## İki model, tek atlas
 
 | | 🦴 Gerçek Atlas (varsayılan) | ❤️ Stilize Model |
 |---|---|---|
-| Kaynak | Z-Anatomy / BodyParts3D (açık kaynak) | Bu proje için prosedürel üretim |
+| Model | Ayrıntılı anatomik model | Bu proje için prosedürel üretim |
 | Yapı | **2.827 parça · 1.643 benzersiz yapı** | 70 temel yapı |
 | Özellik | Gerçek anatomik model, Latince, tanımlar | Atan kalp, akan kan, nefes, sinir implusları |
 | Türkçe | **1.640 yapıda Türkçe ad (%99,8)**, 510'unda zengin Türkçe kart
@@ -21,6 +20,8 @@ Soldaki **Gerçek Atlas / Stilize Model** geçişiyle dilediğini seç.
 
 - 🔍 **1.643 yapı için arama** — Türkçe, İngilizce veya Latince (örn. `öçb`,
   `cruciate`, `siyatik`, `gaster`). `/` tuşu aramaya odaklar.
+- 🥩 **Kas görünümü** — kasları örten fasya varsayılan olarak gizlidir;
+  soldaki **Fasya katmanı** düğmesiyle açılabilir.
 - 🎚️ **Katman soyma** — Kaslar → İskelet → İç Yapılar → Tümü;
   sistemleri tek tek aç/kapat veya **SOLO** ile izole et.
 - 🃏 **Bilgi kartları** — tıklanan yapının tarafı (Sol/Sağ), Latince adı,
@@ -34,15 +35,18 @@ Soldaki **Gerçek Atlas / Stilize Model** geçişiyle dilediğini seç.
   nefes alır, damarlarda kan, sinirlerde impuls akar.
 - 💥 **Patlat (explode)**, 🩻 **X-Işını**, 🔪 **üç eksenli kesit** (aksiyal, sagital, koronal), 🏷️ lider
   çizgili **etiketler**, bölgeye kamera uçuşu, hazır ders görünümleri.
-- 🎨 **Görünüm Temaları** — ücretli atlas sunumu: sisteme özel fiziksel
-  doku malzemeleri (ıslak kas/organ parlaması, mat fildişi kemik, saten
-  sinir) + 4 ışık/renk reçetesi: **Atlas**, **🩸 Gerçekçi** (varsayılan),
-  **🌙 Sinematik**, **💡 Klinik**. Seçim tarayıcıda saklanır.
+- 🎨 **Anatomik atlas sunumu** — mat, sıcak stüdyo ışığı, daha doğal kas
+  tonları ve UV haritası olmayan kas yüzeyleri için hafif görsel doku efekti.
+  Bu efekt yeni anatomik geometri veya gerçek lif yönü üretmez; kaynak
+  kaynak geometrisi korunur. Dört ışık/renk teması ve **Dengeli / Yüksek
+  detay** ekran çözünürlüğü seçimi tarayıcıda saklanır.
 - 🎓 **Rehberli Ders Turları** — "Bir Damla Kanın Yolculuğu", "Bir
   Nefesin İzinde", "Lokmanın Yolculuğu", "Komuta Merkezi", "İskelet
   Turu", "Kas Gücü", "Boşaltım" ve "Görme Yolu": anlatımlı adımlar
   kamerayı yapıdan yapıya uçurur (←/→ ile gez). Üreter ve optik kiyazma
   stilize modelde ayrı gösterilmez; bu adımlar için Gerçek Atlas’a geçin.
+  Tur, hedefi görünür kılmak için açık katmanları soldurur ve kesitleri
+  geçici olarak açar; kullanıcı değiştirmedikçe bitince kesitler geri yüklenir.
 - 🈳 **Üretken Türkçe çeviri motoru** — yön sıfatları, iyelik
   tamlamaları ("Spinal Siniri Ön Kökü"), dişler, damarlar/aort dalları
   gibi isim kalıplarını çözümleyen motor sayesinde 1.643 yapının
@@ -98,9 +102,7 @@ lisansı **CC BY-NC-SA 4.0**'tir. Ayrıntılar: [ATTRIBUTION.md](ATTRIBUTION.md)
 
 - **Three.js** (GLTFLoader + Draco) — 7 sistem GLB'si `public/models/` altında (~19 MB).
 - **Vite** — geliştirme sunucusu ve derleme.
-- Türkçe eşleştirme katmanı: `src/trmap.js` (katkıya açık! daha 1000+ yapı
-  Türkçe karşılıkların gözden geçirilmesi ve iyileştirilmesi için katkıya açıktır).
+- Türkçe eşleştirme katmanı: `src/trmap.js`.
 - Stilize canlı model tamamen prosedüreldir: `src/body.js`.
 
-> ⚠️ Eğitim amaçlıdır; klinik karar için kullanılmaz. Ama arkadaşınızı
-> susturmak için birebirdir.
+> ⚠️ Eğitim amaçlıdır; klinik karar için kullanılmaz.

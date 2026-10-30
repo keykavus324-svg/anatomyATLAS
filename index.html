@@ -4,7 +4,8 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>CORPUS·3D — İnteraktif Anatomi Atlası</title>
-<meta name="description" content="Açık kaynak Z-Anatomy verisiyle 2.800+ gerçek anatomik yapı: katman katman soyulabilir, sınav modlu, Türkçe 3B anatomi atlası." />
+<meta name="description" content="Muhammet TUĞRUL tarafından geliştirilen CORPUS·3D: Türkçe, etkileşimli 3B anatomi atlası." />
+<meta name="author" content="Muhammet TUĞRUL" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='none' stroke='%2322d3ee' stroke-width='2'/%3E%3Ccircle cx='16' cy='9' r='3.4' fill='%2322d3ee'/%3E%3Cpath d='M16 13v8M9 17h14M12 27l4-6 4 6' stroke='%2322d3ee' stroke-width='2' stroke-linecap='round' fill='none'/%3E%3C/svg%3E" />
 <meta name="theme-color" content="#04070d" />
 <link rel="manifest" href="manifest.webmanifest" />
@@ -21,10 +22,14 @@
 <div id="app">
   <!-- 3B sahne -->
   <div id="stage"></div>
+  <div class="atlas-marginalia">
+    <div><span>MUHAMMET TUĞRUL / ATLAS</span><strong>İnsan anatomisi</strong></div>
+    <div class="atlas-marginalia-right"><span>İNTERAKTİF REFERANS</span><strong>01 / Corpus</strong></div>
+  </div>
   <svg id="leaders" aria-hidden="true"></svg>
   <div id="labels" aria-hidden="true"></div>
   <div id="tooltip"></div>
-  <div id="modelCredit" class="hidden"></div>
+  <button id="modelCredit" class="hidden" type="button" aria-label="Proje sahibi, kaynaklar ve lisanslar"></button>
 
   <!-- ÜST BAR -->
   <header id="topbar">
@@ -34,7 +39,7 @@
       </div>
       <div class="brand-text">
         <h1>CORPUS<span>·3D</span></h1>
-        <p>İNTERAKTİF ANATOMİ ATLASI</p>
+        <p>MUHAMMET TUĞRUL · İNTERAKTİF ANATOMİ ATLASI</p>
       </div>
     </div>
 
@@ -55,9 +60,9 @@
       <button id="btnFull" class="icon-btn" title="Tam ekran">
         <svg class="ic" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       </button>
-      <button id="btnQuiz" class="btn-primary">
+      <button id="btnQuiz" class="btn-primary" aria-label="Sınav Modu" title="Sınav Modu">
         <svg class="ic" viewBox="0 0 24 24"><path d="M22 10L12 5 2 10l10 5 10-5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
-        Sınav Modu
+        <span>Sınav Modu</span>
       </button>
     </div>
   </header>
@@ -65,7 +70,7 @@
   <!-- SOL PANEL -->
   <aside id="leftPanel" class="panel">
     <div id="modeSeg" role="group" aria-label="Model seçimi">
-      <button data-mode="real" class="active"> Gerçek Atlas<small>Z-Anatomy · 2.827 yapı</small></button>
+      <button data-mode="real" class="active"> Gerçek Atlas<small>2.827 model parçası</small></button>
       <button data-mode="proc">Stilize Model<small>canlı simülasyon</small></button>
     </div>
     <div class="tabs">
@@ -78,13 +83,20 @@
         <span>Katman Soyun</span><span id="layerName" class="sec-val">Kaslar</span>
       </div>
       <div id="layerSeg"></div>
+      <button id="fasciaToggle" class="fascia-toggle" type="button" aria-pressed="false" title="Kasları örten fasya katmanını göster veya gizle">Fasya katmanı: Gizli</button>
 
       <div class="sec-title"><span>Görünüm Teması</span><span class="sec-hint">doku + stüdyo ışığı</span></div>
       <div id="themeSeg">
-        <button data-vtheme="atlas">🎨 Atlas</button>
-        <button data-vtheme="gercekci">🩸 Gerçekçi</button>
-        <button data-vtheme="sinematik">🌙 Sinematik</button>
-        <button data-vtheme="klinik">💡 Klinik</button>
+        <button data-vtheme="atlas">Atlas</button>
+        <button data-vtheme="gercekci">Gerçekçi</button>
+        <button data-vtheme="sinematik">Sinematik</button>
+        <button data-vtheme="klinik">Klinik</button>
+      </div>
+
+      <div class="sec-title"><span>Görüntü kalitesi</span><span class="sec-hint">ekran çözünürlüğü</span></div>
+      <div id="qualitySeg" role="group" aria-label="Görüntü kalitesi">
+        <button type="button" data-quality="balanced" aria-pressed="false">Dengeli</button>
+        <button type="button" data-quality="high" aria-pressed="true">Yüksek detay</button>
       </div>
 
       <div class="sec-title"><span>Sistemler</span><span class="sec-hint">göz = göster / gizle</span></div>
@@ -143,9 +155,9 @@
     <div id="infoDefault">
       <h2>Keşfetmeye başla</h2>
       <p class="muted" id="defaultLead">Model üzerinde herhangi bir yapıyı tıklayın —
-        bilgi kartı burada açılır. <b>Gerçek Atlas</b> açık kaynak Z-Anatomy
-        verisiyle 2.800'den fazla gerçek yapı sunar; <b>Stilize Model</b>'de
-        kalp atar, akciğerler nefes alır, kan ve sinir implusları akar.</p>
+        bilgi kartı burada açılır. <b>Gerçek Atlas</b> 1.600'den fazla
+        anatomik yapı sunar; <b>Stilize Model</b>'de
+        kalp atar, akciğerler nefes alır, kan ve sinir impulsları akar.</p>
       <ul class="howto">
         <li><b>Sürükle</b> döndür · <b>Tekerlek</b> yakınlaştır</li>
         <li><b>Tıkla</b> yapı seç · <b>Çift tık</b> odaklan</li>
@@ -185,7 +197,7 @@
       </div>
       <div class="fact-mini" id="factWrap"><b>💡</b> <span id="infoFact"></span></div>
       <div id="defWrap" class="hidden">
-        <h3>Kaynak Tanımı (Z-Anatomy / Wikipedia)</h3>
+        <h3>Kaynak Tanımı (Wikipedia)</h3>
         <p id="infoDef" class="def-text"></p>
       </div>
       <a id="infoWiki" class="wiki-link hidden" href="#" target="_blank" rel="noopener">Wikipedia'da oku →</a>
@@ -293,19 +305,29 @@
   <!-- KAYNAKLAR -->
   <div id="creditsModal" class="modal-wrap hidden">
     <div class="modal credits">
-      <h2>📚 Kaynaklar ve Lisanslar</h2>
+      <h2>Proje ve Kaynaklar</h2>
+      <div class="credit-block">
+        <h3>Proje sahibi</h3>
+        <p><b>Muhammet TUĞRUL</b> · CORPUS·3D tasarım ve geliştirme.</p>
+      </div>
       <div class="credit-block">
         <h3>Gerçek Atlas modeli (varsayılan)</h3>
         <p>2.827 parçalı gerçek anatomik model, açık kaynak
-          <b>Z-Anatomy</b> projesinin <b>BodyParts3D</b> (The Database Center for
-          Life Science, Japonya) tabanlı verisidir; glTF çıktısı
-          <b>github.com/nqwrc/3d-anatomy</b> deposundan alınmıştır.</p>
+          <a href="https://github.com/Z-Anatomy/Models-of-human-anatomy" target="_blank" rel="noopener">Z-Anatomy</a> projesinin
+          <a href="https://dbarchive.biosciencedbc.jp/en/bodyparts3d/" target="_blank" rel="noopener">BodyParts3D</a>
+          (The Database Center for Life Science, Japonya) tabanlı verisidir; glTF çıktısı
+          <a href="https://github.com/nqwrc/3d-anatomy" target="_blank" rel="noopener">nqwrc/3d-anatomy</a> deposundan alınmıştır.
+          Bu uygulamada yüzey malzemeleri, renk ve aydınlatma sunumu değiştirilmiştir.</p>
         <p class="lic">“BodyParts3D — The Database Center for Life Science — CC BY-SA 2.1 Japan” ·
           “Z-Anatomy — the open source atlas of anatomy — CC BY-SA 4.0”.
-          İç kulak modelleri University of Dundee (CC BY-NC-SA 4.0) ve böbrek
-          modeli lissiecowley (CC BY-NC 4.0) içerdiğinden dağıtımın geçerli
-          lisansı <b>CC BY-NC-SA 4.0</b>'tir — bu uygulama eğitim amaçlı ve
-          ticari değildir. Tanımlar çoğunlukla Wikipedia'dan (CC BY-SA) gelir.</p>
+          “Brainder” ve “White matter” — University of Washington;
+          “Cranial Nerves and Foramina” — University of Dundee, CAHID (CC BY 4.0);
+          “Anatomy of the Inner Ear” — University of Dundee School of Medicine
+          (CC BY-NC-SA 4.0); “Kidney” — lissiecowley (CC BY-NC 4.0).
+          İç kulak ve böbrek bileşenleri nedeniyle bu dağıtımın geçerli lisansı
+          <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener">CC BY-NC-SA 4.0</a>'tir. Tanımlar çoğunlukla Wikipedia'dan
+          alınmıştır (CC BY-SA 3.0 / GFDL). Ayrıntılar: ATTRIBUTION.md ve
+          modelle birlikte sunulan lisans dosyaları.</p>
       </div>
       <div class="credit-block">
         <h3>Stilize canlı model</h3>
@@ -314,11 +336,9 @@
           içerikleri eğitim amaçlı özetlerdir; klinik karar için kullanılmaz.</p>
       </div>
       <div class="credit-block">
-        <h3>Türkçeleştirme katmanı</h3>
-        <p>Bu projenin katkısı: açık atlas verisini Türkçe isimler, Türkçe
-          açıklamalar, klinik notlar, sınav oyunu ve canlı vital simülasyonuyla
-          birleştiren arayüz. Katkılarınızı bekleriz — çevrilecek daha binlerce
-          yapı var!</p>
+        <h3>Türkçe içerik ve arayüz</h3>
+        <p>CORPUS·3D; Türkçe yapı adları, açıklamalar, ders turları, sınav
+          modu ve etkileşimli 3B görüntüleme araçlarını bir araya getirir.</p>
       </div>
       <button class="btn-ghost" data-close="creditsModal">Kapat</button>
     </div>
@@ -339,7 +359,7 @@
       <h1>CORPUS<span>·3D</span></h1>
       <p>İNSAN VÜCUDU · KATMAN KATMAN</p>
       <div class="intro-bar"><i id="introFill"></i></div>
-      <small id="introMsg">Z-Anatomy atlası yükleniyor…</small>
+      <small id="introMsg">Anatomi atlası yükleniyor…</small>
     </div>
   </div>
 </div>

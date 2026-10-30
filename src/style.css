@@ -441,7 +441,7 @@ input[type=range]::-moz-range-thumb{width:14px; height:14px; border-radius:50%; 
 #themeSeg{display:flex; background:rgba(255,255,255,.045); border:1px solid rgba(255,255,255,.08);
   border-radius:11px; padding:3px; gap:3px}
 #themeSeg button{flex:1; padding:7px 1px; border-radius:8px; font-size:11px; font-weight:700;
-  color:var(--muted); transition:.2s; white-space:nowrap; font:inherit}
+  color:var(--muted); transition:.2s; white-space:nowrap; font-family:inherit}
 #themeSeg button:hover{color:var(--txt)}
 #themeSeg button.active{background:linear-gradient(135deg,rgba(251,77,109,.30),rgba(34,211,238,.22));
   color:#fff; box-shadow:inset 0 0 0 1px rgba(251,77,109,.45)}
@@ -472,3 +472,166 @@ body[data-vtheme="klinik"]{background:
   #bottomBar{max-height:36vh; overflow-y:auto}
   .info-actions{flex-wrap:wrap}
 }
+
+/* Kasları örten fasya ayrı açılıp kapatılabilir. */
+.fascia-toggle{width:100%; margin-top:8px; padding:8px 10px; border-radius:9px; border:1px solid rgba(255,255,255,.13); color:var(--muted); text-align:left; font-size:12px}
+.fascia-toggle:hover,.fascia-toggle.on{color:var(--cyan); border-color:rgba(34,211,238,.45); background:rgba(34,211,238,.08)}
+
+/* ================= ANATOMİ ATLASI · EDİTORYAL GÖRÜNÜM ================= */
+:root{
+  --bg:#101615; --bg2:#1c2523;
+  --panel:rgba(26,32,30,.96); --panel-border:rgba(221,201,172,.14);
+  --txt:#f1ebe0; --muted:#b2b4aa; --muted2:#838d81;
+  --cyan:#d1b185; --teal:#9eae97; --cyan-dim:rgba(209,177,133,.13);
+  --red:#c97168; --amber:#d9b980; --green:#a1c2a0;
+}
+body{
+  background:radial-gradient(ellipse 52% 75% at 50% 42%,#343e39 0%,#242e2b 46%,transparent 78%),
+    linear-gradient(150deg,#18201e,#101615 75%);
+}
+body[data-vtheme="sinematik"]{
+  background:radial-gradient(ellipse 52% 75% at 50% 42%,#292e2b,#111716 75%);
+}
+body[data-vtheme="klinik"]{
+  background:radial-gradient(ellipse 52% 75% at 50% 42%,#48534b,#1c2522 78%);
+}
+body::before{
+  opacity:.32;
+  background-image:linear-gradient(rgba(233,224,205,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(233,224,205,.045) 1px,transparent 1px);
+  background-size:60px 60px;
+  mask-image:radial-gradient(ellipse at 50% 45%,#000 20%,transparent 76%);
+}
+.panel,#topbar,#bottomBar,#quizHud,.modal{
+  box-shadow:0 20px 55px rgba(0,0,0,.26),inset 0 1px 0 rgba(255,255,255,.035);
+  backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
+}
+#topbar{height:68px; top:12px; border-radius:13px; background:rgba(23,29,27,.96); gap:22px}
+.brand-mark{color:#d2b28b; filter:none}
+.brand-text h1{font-family:Georgia,"Times New Roman",serif; font-size:23px; font-weight:600; letter-spacing:.04em}
+.brand-text h1 span{color:#d2b28b}
+.brand-text p{font-size:8px; letter-spacing:.24em; color:#a1a79e}
+.search-wrap{height:39px; background:rgba(0,0,0,.14); border-color:rgba(229,219,202,.13); border-radius:8px}
+.search-wrap:focus-within{border-color:rgba(209,177,133,.65); box-shadow:0 0 0 3px rgba(209,177,133,.1)}
+#searchResults{background:#1b2220; border-color:rgba(221,201,172,.2)}
+#searchResults button:hover,#searchResults button.sel{background:rgba(209,177,133,.12)}
+.icon-btn{border-radius:8px; background:rgba(255,255,255,.025); border-color:rgba(221,201,172,.16)}
+.icon-btn:hover{border-color:#d1b185; color:#e9d3ae}
+.btn-primary{border-radius:8px; background:#d3b28a; color:#201b16; box-shadow:none}
+.btn-primary:hover{background:#e3c59e; box-shadow:0 5px 18px rgba(0,0,0,.2)}
+.btn-soft{background:rgba(209,177,133,.08); border-color:rgba(209,177,133,.3); color:#e2c9a4; border-radius:8px}
+.btn-soft:hover{background:rgba(209,177,133,.16)}
+.btn-soft.on{background:#d1b185;color:#231e19}
+#leftPanel,#rightPanel{top:94px; bottom:102px; border-radius:12px}
+#rightPanel{padding:18px}
+#modeSeg button{border-radius:7px; background:rgba(255,255,255,.025); border-color:rgba(221,201,172,.12)}
+#modeSeg button.active{color:#f4e5d0; border-color:rgba(209,177,133,.55); background:rgba(209,177,133,.13); box-shadow:none}
+#modeSeg button.active small{color:#b7ab99}
+.tab.active{color:#ead4b4; background:rgba(209,177,133,.06); border-bottom-color:#d1b185}
+.pill{color:#e4cda9; background:rgba(209,177,133,.16)}
+.sec-title{color:#a3a99d; font-size:10px; letter-spacing:.15em}
+.sec-val{color:#d4bb98}
+#layerSeg,#themeSeg,#qualitySeg{background:rgba(0,0,0,.13); border:1px solid rgba(221,201,172,.12); border-radius:8px; padding:3px; gap:3px}
+#layerSeg button,#themeSeg button,#qualitySeg button{color:#b5b8ad; border-radius:5px}
+#layerSeg button.active,#themeSeg button.active,#qualitySeg button.active{
+  background:rgba(209,177,133,.18); color:#f3e6d4; box-shadow:inset 0 0 0 1px rgba(209,177,133,.35)
+}
+#qualitySeg{display:flex}
+#qualitySeg button{flex:1; padding:8px 5px; font-size:11px; font-weight:700; transition:.2s}
+.fascia-toggle:hover,.fascia-toggle.on{color:#e3c8a2; border-color:rgba(209,177,133,.5); background:rgba(209,177,133,.09)}
+.sys-row{border-radius:8px}
+.sys-row:hover{background:rgba(209,177,133,.06)}
+.sys-dot{box-shadow:none}
+.sys-eye:hover,.sys-solo:hover{color:#e2c49c; background:rgba(209,177,133,.08); border-color:rgba(209,177,133,.4)}
+.chips button:hover{color:#ead2b0;border-color:rgba(209,177,133,.5)}
+#presetList button{border-radius:8px;background:rgba(255,255,255,.025)}
+#presetList button:hover,.tour-item:hover{background:rgba(209,177,133,.08);border-color:rgba(209,177,133,.3)}
+.tour-item{background:rgba(255,255,255,.025); border-radius:8px}
+#vitals{background:#1b2922;border:1px solid rgba(151,190,156,.2);border-radius:9px}
+.vitals-head,.vitals-grid b{color:#bad1b6}
+.vitals-note{color:#91a895}
+.live-dot{background:#9cba9d;box-shadow:0 0 8px rgba(156,186,157,.6)}
+#infoDefault h2,#infoName{font-family:Georgia,"Times New Roman",serif; font-weight:500; letter-spacing:-.02em}
+#infoDefault h2{font-size:26px;line-height:1.15}
+.fact-card{background:rgba(209,177,133,.06);border-color:rgba(209,177,133,.2);border-radius:9px}
+.fact-head,.fact-head button{color:#d9bd94}
+.stats-row div{border-radius:8px;background:rgba(255,255,255,.025)}
+.stats-row b{font-family:Georgia,serif;color:#e5cba8}
+.struct-note{background:rgba(209,177,133,.07);border-color:rgba(209,177,133,.18)}
+.struct-item:hover,.struct-item.active{background:rgba(209,177,133,.12);color:#f0dcc1}
+#bottomBar{border-radius:12px; background:rgba(24,31,29,.96); gap:9px; padding:8px 12px}
+.bb-group{border-radius:7px}
+.bb-group button{border-radius:5px}
+.bb-group button.active{background:rgba(209,177,133,.18);color:#f3e1c6;box-shadow:inset 0 0 0 1px rgba(209,177,133,.35)}
+.bb-slider{color:#b9bbaf}
+input[type=range]{background:linear-gradient(90deg,#cbae86 var(--v,0%),rgba(255,255,255,.15) var(--v,0%))}
+input[type=range]::-webkit-slider-thumb{background:#f1e5d1;border-color:#bd9970;box-shadow:0 0 6px rgba(209,177,133,.35)}
+input[type=range]::-moz-range-thumb{background:#f1e5d1;border-color:#bd9970}
+#modelCredit{background:rgba(24,31,29,.88);border-color:rgba(221,201,172,.12)}
+#intro{background:radial-gradient(ellipse at 50% 40%,#303b34,#101615 70%)}
+.intro-mark{filter:drop-shadow(0 0 12px rgba(209,177,133,.28))}
+.intro-bar i{background:linear-gradient(90deg,#aa8863,#e0c7a3);box-shadow:none}
+.atlas-marginalia{position:absolute;z-index:4;top:104px;left:324px;right:368px;display:flex;justify-content:space-between;pointer-events:none;color:#b7b6a8}
+.atlas-marginalia div{display:flex;flex-direction:column;gap:5px}
+.atlas-marginalia span{font-size:9px;font-weight:700;letter-spacing:.19em;color:#c5ae8e}
+.atlas-marginalia strong{font:italic 17px Georgia,serif;color:#d6d4c6;font-weight:400}
+.atlas-marginalia-right{text-align:right}
+button:focus-visible,input:focus-visible{outline:2px solid #e5c79d;outline-offset:2px}
+@media(max-width:1150px){.atlas-marginalia{left:292px;right:326px}.atlas-marginalia-right{display:none}}
+@media(max-width:880px){
+  #leftPanel,#rightPanel{top:auto;bottom:118px}
+  #topbar{height:62px}
+  .atlas-marginalia{left:18px;right:auto;top:86px}
+  .atlas-marginalia strong{font-size:14px}
+  #bottomBar{gap:8px;padding:8px 10px}
+}
+
+/* Dar ekranlarda arama ve araçlar ayrı satırlarda; üst üste binmez. */
+@media(max-width:880px){
+  #topbar{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:35px 38px;gap:7px;top:10px;height:96px;padding:7px 10px}
+  .brand{grid-column:1;grid-row:1;gap:7px}
+  .brand-text h1{font-size:18px;white-space:nowrap}
+  .brand-mark svg{width:25px;height:25px}
+  .top-actions{grid-column:2;grid-row:1;margin:0;gap:5px}
+  .top-actions .icon-btn,.top-actions #btnQuiz{width:34px;height:34px;padding:0;display:grid;place-items:center}
+  #btnQuiz span{display:none}
+  .search-wrap{grid-column:1/-1;grid-row:2;width:100%;max-width:none;height:37px;margin:0}
+  .search-wrap input{min-width:0}
+  #searchResults{top:42px}
+  .atlas-marginalia{top:116px}
+  .atlas-marginalia-right{display:none}
+  #bottomBar{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px;width:calc(100vw - 20px);max-width:480px;max-height:none;overflow:visible;padding:8px 10px}
+  #bottomBar .bb-sep,#bottomBar .bb-group.views{display:none}
+  #bottomBar > .bb-slider{grid-column:1;grid-row:1;gap:6px}
+  #bottomBar > .bb-slider input{width:min(19vw,80px)}
+  #bottomBar .toggles{grid-column:2/4;grid-row:1}
+  #bottomBar .toggles button{padding:6px 7px;font-size:11px}
+  #bottomBar .bb-clip{grid-column:1/-1;grid-row:2;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+  #bottomBar .bb-clip .bb-slider{min-width:0;gap:4px;justify-content:space-between;font-size:10px}
+  #bottomBar .bb-clip input{width:min(10vw,52px)}
+  #btnShare{grid-column:1/3;grid-row:3}
+  #btnReset{grid-column:3;grid-row:3}
+  #btnShare,#btnReset{padding:6px 10px;font-size:11px}
+  #mobileBtns{bottom:166px;white-space:nowrap}
+  #leftPanel,#rightPanel{bottom:205px;height:min(52vh,calc(100dvh - 335px));min-height:220px}
+  #toast{bottom:210px}
+  #quizHud{top:115px}
+}
+@media(max-width:880px){
+  #mobileBtns{bottom:122px}
+  #leftPanel,#rightPanel{bottom:162px}
+  #toast{bottom:166px}
+}
+@media(max-width:360px){
+  .brand-text h1{font-size:14px}
+  .brand-mark svg{width:21px;height:21px}
+}
+@media(max-width:360px){
+  .top-actions{gap:4px}
+  .top-actions .icon-btn,.top-actions #btnQuiz{width:30px;height:32px}
+}
+
+/* Proje imzası, veri atıfları ve lisanslar penceresine açılır. */
+#modelCredit{text-align:left;cursor:pointer}
+#modelCredit:hover{border-color:rgba(209,177,133,.4);color:var(--txt)}
+
+.credit-block a{color:#e2c9a4;text-decoration:underline;text-underline-offset:3px}

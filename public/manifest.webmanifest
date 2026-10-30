@@ -1,7 +1,7 @@
 {
   "name": "CORPUS·3D — İnteraktif Anatomi Atlası",
   "short_name": "CORPUS·3D",
-  "description": "Açık kaynak Z-Anatomy verisiyle 2.800+ gercek anatomik yapi: katman soyma, 3 eksen kesit, ders turlari ve sinav modu.",
+  "description": "Muhammet TUĞRUL tarafından geliştirilen etkileşimli 3B anatomi atlası: katmanlar, kesitler, ders turları ve sınav modu.",
   "lang": "tr",
   "start_url": ".",
   "scope": ".",

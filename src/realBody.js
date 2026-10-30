@@ -10,6 +10,8 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { INFO } from './data.js';
 import { mapToInfo, turkishName } from './trmap.js';
+import { atlasNodeName, parseAtlasName } from './atlasNames.js';
+import { makeAnatomyMaterial } from './anatomyMaterials.js';
 
 export const REAL_SYS_ORDER = ['bone', 'joint', 'muscle', 'organ', 'vessel', 'lymph', 'nerve'];
 const FILES = [
@@ -19,11 +21,6 @@ const FILES = [
 const SYS_FACTOR = { bone: .85, joint: .95, muscle: 1.4, organ: 1.1, vessel: .95, lymph: 1.0, nerve: 1.2 };
 const BASE = import.meta.env.BASE_URL || '/';
 
-function parseName(raw) {
-  let side = null, base = raw;
-  if (/\.(l|r)$/.test(raw)) { side = raw.endsWith('.l') ? 'l' : 'r'; base = raw.slice(0, -2); }
-  return { base, side };
-}
 function cleanDef(text) {
   if (!text) return { def: '', wiki: '' };
   let wiki = '';
@@ -38,35 +35,6 @@ function cleanDef(text) {
     def = def.slice(0, cut > 200 ? cut + 1 : 620) + ' …';
   }
   return { def, wiki };
-}
-
-// Sistem bazında doku hissi: GLB'nin dağınık plastik malzemeleri yerine
-// ücretli uygulamalar tarzı tutarlı fiziksel yüzeyler (ıslak kas/organ,
-// mat kemik, saten sinir). Renk kaynağı (arter kırmızı / ven mavi...) korunur.
-const SYS_MAT = {
-  bone:   { rough: .52, cc: 0 },
-  joint:  { rough: .34, cc: .35 },
-  muscle: { rough: .46, cc: .30 },
-  organ:  { rough: .30, cc: .50 },
-  vessel: { rough: .30, cc: .45 },
-  lymph:  { rough: .38, cc: .30 },
-  nerve:  { rough: .42, cc: .20 },
-};
-function toPhysical(src, sys) {
-  const P = SYS_MAT[sys] || { rough: .45, cc: .2 };
-  return new THREE.MeshPhysicalMaterial({
-    name: src.name,
-    color: src.color ? src.color.clone() : new THREE.Color(0xffffff),
-    map: src.map || null,
-    roughness: P.rough, metalness: 0,
-    clearcoat: P.cc, clearcoatRoughness: .55, envMapIntensity: .6,
-    emissive: src.emissive ? src.emissive.clone() : new THREE.Color(0x000000),
-    emissiveIntensity: src.emissiveIntensity ?? 1,
-    transparent: !!src.transparent, opacity: src.opacity ?? 1,
-    alphaTest: src.alphaTest || 0,
-    side: src.side ?? THREE.FrontSide,
-    depthWrite: src.depthWrite !== false,
-  });
 }
 
 export async function loadRealBody({ onProgress = () => {} } = {}) {
@@ -94,7 +62,7 @@ export async function loadRealBody({ onProgress = () => {} } = {}) {
   const loaded = await Promise.all(FILES.map(async ([file, sys]) => {
     const gltf = await loader.loadAsync(BASE + 'models/' + file + '.glb');
     step(file + '.glb yüklendi…');
-    return [sys, gltf.scene];
+    return [sys, gltf.scene, gltf.parser];
   }));
 
   for (const [sys, scene] of loaded) {
@@ -116,13 +84,15 @@ export async function loadRealBody({ onProgress = () => {} } = {}) {
   root.updateMatrixWorld(true);
 
   const _wp = new THREE.Vector3(), _pq = new THREE.Quaternion(), _ps = new THREE.Vector3();
-  for (const [sys, scene] of loaded) {
+  for (const [sys, scene, parser] of loaded) {
     const meshes = [];
     scene.traverse((o) => { if (o.isMesh) meshes.push(o); });
     for (const mesh of meshes) {
-      const { base, side } = parseName(mesh.name || '');
+      const { base, side } = parseAtlasName(atlasNodeName(mesh, scene, parser));
       if (!base) continue;
-      mesh.material = toPhysical(mesh.material, sys);
+      // Z-Anatomy bazı kasları örten fasya yüzeylerini aynı GLB'ye koyar.
+      const isFascia = sys === 'muscle' && /^fascia(?:_\d+)?$/i.test(mesh.material.name || '');
+      mesh.material = makeAnatomyMaterial(mesh.material, sys);
       mesh.material.userData.baseOpacity = 1;
       mesh.castShadow = false; mesh.receiveShadow = false;
       mesh.userData.sid = base; mesh.userData.system = sys; mesh.userData.side = side;
@@ -137,7 +107,7 @@ export async function loadRealBody({ onProgress = () => {} } = {}) {
       }
       const parentScale = Math.max(_ps.x || S, .0001);
       const part = {
-        id: base, system: sys, group: mesh,
+        id: base, system: sys, group: mesh, isFascia,
         mats: [mesh.material], meshes: [mesh],
         home: mesh.position.clone(), dir,
         factor: (SYS_FACTOR[sys] ?? 1) / parentScale,

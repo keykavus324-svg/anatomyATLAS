@@ -26,4 +26,4 @@ Ticari olmayan (NC) bileşenler nedeniyle bu veri paketinin dağıtım lisansı
 - Stilize prosedürel model (`src/body.js`) — tamamen bu projeye aittir.
 
 Kodu yeniden dağıtırken yukarıdaki atıfları koruyunuz ve model verisini aynı
-lisansla paylaşınız. Teşekkürler Z-Anatomy ve BodyParts3D ekipleri! 🙏
+lisansla paylaşınız.

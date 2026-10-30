@@ -40,3 +40,89 @@ test('üretim service worker kabuğu ve tüm model verilerini önbelleğe alır,
   handlers.fetch({ request: { method: 'GET', url: 'https://example.test/app/?view=abc', mode: 'navigate' }, respondWith: (p) => { promise = p; } });
   assert.equal(await promise, 'offline-html');
 });
+
+test('çok parçalı ve ortak mesh kullanan düğümlerde özgün anatomi adı korunur', async () => {
+  const { atlasNodeName, parseAtlasName } = await import('../src/atlasNames.js');
+  const scene = { parent: null, userData: {} };
+  const parent = { parent: scene, userData: { name: 'Nucleus pulposus C3-C4.l' } };
+  const primitive = { parent, userData: {}, name: 'Nucleus_pulposus_primitive_1' };
+  // Üç.js klonları yanlış/ortak association taşısa bile düğümün adı öncelikli.
+  const parser = { associations: new Map([[primitive, { nodes: 0 }], [parent, { nodes: 0 }]]), json: { nodes: [{ name: 'Nucleus pulposus C7-T1.r' }] } };
+  assert.deepEqual(parseAtlasName(atlasNodeName(primitive, scene, parser)), { base: 'Nucleus pulposus C3-C4', side: 'l' });
+  assert.deepEqual(parseAtlasName('Biceps brachii.r'), { base: 'Biceps brachii', side: 'r' });
+  assert.deepEqual(parseAtlasName('Diaphragm'), { base: 'Diaphragm', side: null });
+  const unnamed = { parent: scene, userData: {} };
+  parser.associations.set(unnamed, { nodes: 0 });
+  assert.equal(atlasNodeName(unnamed, scene, parser), 'Nucleus pulposus C7-T1.r');
+});
+
+test('izolasyon yalnızca açık katmanları soldurur ve seçimi görünür yapar', async () => {
+  const { targetOpacity } = await import('../src/visibility.js');
+  const systems = { muscle: 1, organ: 0, bone: 0.2 };
+  const state = { isolate: 'heart', override: null };
+  assert.equal(targetOpacity('heart', 'organ', state, systems), 1);
+  assert.equal(targetOpacity('lung', 'organ', state, systems), 0);
+  assert.equal(targetOpacity('biceps', 'muscle', state, systems), 0.07);
+  assert.equal(targetOpacity('femur', 'bone', state, systems), 0.07);
+  state.override = new Map([['biceps', 0.03]]);
+  assert.equal(targetOpacity('biceps', 'muscle', state, systems), 0.03);
+  assert.equal(targetOpacity('femur', 'bone', state, systems), 0);
+  state.isolate = null;
+  assert.equal(targetOpacity('biceps', 'muscle', state, systems), 0.03);
+});
+
+test('seçim önbelleği gizli parçaları ve gizli ebeveynlerini atlar, geçersizleştirilince güncellenir', async () => {
+  const { createVisiblePickCache } = await import('../src/visibility.js');
+  const root = { visible: true, parent: null };
+  const group = { visible: true, parent: root };
+  const a = { visible: true, parent: group }, b = { visible: false, parent: root };
+  const cache = createVisiblePickCache([a, b]);
+  const first = cache.get();
+  assert.deepEqual(first, [a]);
+  assert.equal(cache.get(), first);
+  b.visible = true; group.visible = false; cache.invalidate();
+  assert.deepEqual(cache.get(), [b]);
+  root.visible = false; cache.invalidate();
+  assert.deepEqual(cache.get(), []);
+});
+
+test('atlas materyalleri kası iyileştirir ve diğer anatomik renkleri korur', async () => {
+  const THREE = await import('three');
+  const { makeAnatomyMaterial } = await import('../src/anatomyMaterials.js');
+  const source = new THREE.MeshStandardMaterial({ name: 'Internal rotator', color: '#a43e32', side: THREE.DoubleSide, opacity: .8, transparent: true });
+  const muscle = makeAnatomyMaterial(source, 'muscle');
+  assert.equal(muscle.isMeshPhysicalMaterial, true);
+  assert.equal(muscle.userData.anatomyTissue, 'muscle');
+  assert.equal(muscle.side, THREE.DoubleSide);
+  assert.equal(muscle.opacity, .8);
+  assert.equal(muscle.transparent, true);
+  assert.equal(muscle.customProgramCacheKey(), 'anatomy-tissue-variation-v1');
+  const shader = { vertexShader: '#include <common>\n#include <begin_vertex>', fragmentShader: '#include <common>\n#include <color_fragment>' };
+  muscle.onBeforeCompile(shader);
+  assert.match(shader.vertexShader, /vTissuePosition/);
+  assert.match(shader.fragmentShader, /tissueDetail/);
+  const artery = new THREE.MeshStandardMaterial({ name: 'Artery', color: '#d22d32' });
+  const vessel = makeAnatomyMaterial(artery, 'vessel');
+  assert.equal(vessel.color.getHexString(), artery.color.getHexString());
+  assert.equal(vessel.userData.anatomyTissue, 'original');
+  const tendon = new THREE.MeshStandardMaterial({ name: 'Tendon', color: '#f0dacc' });
+  assert.equal(makeAnatomyMaterial(tendon, 'muscle').color.getHexString(), tendon.color.getHexString());
+});
+
+test('proje sahibi görünür; veri kaynağı ve zorunlu atıflar kaynaklar bölümünde korunur', () => {
+  const html = readFileSync('index.html', 'utf8');
+  const [mainPage, credits] = html.split('<!-- KAYNAKLAR -->');
+  assert.match(mainPage, /Muhammet TUĞRUL/);
+  assert.match(mainPage, /MUHAMMET TUĞRUL \/ ATLAS/);
+  assert.doesNotMatch(mainPage, /Z-Anatomy|BodyParts3D|nqwrc/i);
+  assert.match(credits, /Muhammet TUĞRUL/);
+  assert.match(credits, /Z-Anatomy/);
+  assert.match(credits, /BodyParts3D/);
+  assert.match(credits, /University of Washington/);
+  assert.match(credits, /University of Dundee/);
+  assert.match(credits, /lissiecowley/);
+  const manifest = JSON.parse(readFileSync('public/manifest.webmanifest', 'utf8'));
+  assert.match(manifest.description, /Muhammet TUĞRUL/);
+  assert.doesNotMatch(manifest.description, /Z-Anatomy/i);
+  assert.match(readFileSync('README.md', 'utf8'), /Muhammet TUĞRUL/);
+});
