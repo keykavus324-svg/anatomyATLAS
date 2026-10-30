@@ -1,0 +1,37 @@
+{
+  "name": "TUĞRUL ATLAS — İnteraktif Anatomi Atlası",
+  "short_name": "TUĞRUL ATLAS",
+  "description": "Muhammet TUĞRUL tarafından geliştirilen etkileşimli 3B anatomi atlası: katmanlar, kesitler, ders turları ve sınav modu.",
+  "lang": "tr",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#17231d",
+  "theme_color": "#17231d",
+  "categories": [
+    "education",
+    "medical",
+    "reference"
+  ],
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
