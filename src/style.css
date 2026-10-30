@@ -696,3 +696,17 @@ html[dir="rtl"] .sys-name{text-align:right!important}
 #hiddenList{display:grid;gap:4px;max-height:150px;overflow-y:auto;margin-top:8px}
 .hidden-entry{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11px;line-height:1.35;color:var(--muted);padding:4px 0}
 .hidden-entry span{overflow-wrap:anywhere}.hidden-entry button{flex:none;color:#e5c79d;font-size:11px;padding:4px 5px;border:1px solid rgba(209,177,133,.25);border-radius:5px}
+
+/* Menüyü yerinde kapat, kenardan tekrar aç. Odakta yalnızca geri dönüş kalsın. */
+.panel-close-row{display:flex;justify-content:flex-end;flex:none}
+#leftPanel > .panel-close-row{padding:9px 12px 0}
+#rightPanel > .panel-close-row{position:sticky;top:-18px;z-index:3;margin:-8px -8px 6px;pointer-events:none}
+.panel-close{pointer-events:auto;color:#dfc9a8;font-size:11px;font-weight:700;line-height:1.2;padding:7px 9px;border:1px solid rgba(209,177,133,.35);border-radius:7px;background:#202e26}
+.panel-close:hover,.panel-reopen:hover{color:#fff1da;background:#3b4b3d}
+.panel-reopen{position:absolute;top:48%;z-index:54;color:#e9d7ba;font-size:11px;font-weight:700;line-height:1.2;background:rgba(29,42,33,.93);border:1px solid rgba(209,177,133,.36);padding:10px 9px;box-shadow:0 4px 20px rgba(0,0,0,.2)}
+.panel-reopen-left{left:0;border-radius:0 8px 8px 0}
+.panel-reopen-right{right:0;border-radius:8px 0 0 8px}
+.panel-reopen[hidden]{display:none!important}
+.focus-mode #mbLeft,.focus-mode #mbRight,.focus-mode #mbTools{display:none}
+#mbFocus{border-color:rgba(224,195,153,.55)!important;color:#f6e9d4!important}
+@media(max-width:880px){.panel-reopen{top:44%;font-size:10px;padding:9px 6px}}

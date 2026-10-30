@@ -68,6 +68,7 @@
 
   <!-- SOL PANEL -->
   <aside id="leftPanel" class="panel">
+    <div class="panel-close-row"><button id="closeLeftPanel" class="panel-close" type="button" aria-controls="leftPanel">✕ Menüyü kapat</button></div>
     <div class="atlas-panel-title"><span class="panel-eyebrow">KEŞİF ALANI <i>01 / 07</i></span><strong>İnsan Anatomisi</strong><small>KATMAN KATMAN KEŞFET</small></div>
     <p id="languageNotice" class="language-notice hidden"></p>
     <div class="tabs">
@@ -135,6 +136,7 @@
 
   <!-- SAĞ PANEL -->
   <aside id="rightPanel" class="panel">
+    <div class="panel-close-row"><button id="closeRightPanel" class="panel-close" type="button" aria-controls="rightPanel">✕ Menüyü kapat</button></div>
     <section id="hiddenTray" class="hidden" aria-label="Gizlenen yapılar">
       <div class="hidden-tray-head"><strong id="hiddenTitle">Gizlenen yapılar</strong><button type="button" id="btnRestoreAll">Hepsini geri getir</button></div>
       <div id="hiddenList"></div>
@@ -199,6 +201,10 @@
       </div>
     </div>
   </aside>
+
+  <!-- Kapalı panelleri ekranın kenarından yeniden aç. -->
+  <button id="reopenLeftPanel" class="panel-reopen panel-reopen-left" type="button" aria-controls="leftPanel" aria-expanded="true" hidden>☰ Sistemler ›</button>
+  <button id="reopenRightPanel" class="panel-reopen panel-reopen-right" type="button" aria-controls="rightPanel" aria-expanded="true" hidden>‹ ℹ Bilgi</button>
 
   <!-- ALT ARAÇ ÇUBUĞU -->
   <div id="bottomBar">
@@ -338,7 +344,7 @@
     <button id="mbLeft" type="button" aria-controls="leftPanel" aria-expanded="true">☰ Sistemler</button>
     <button id="mbRight" type="button" aria-controls="rightPanel" aria-expanded="true">ℹ Bilgi</button>
     <button id="mbTools" type="button" aria-controls="bottomBar" aria-expanded="true">⚙ Araçlar</button>
-    <button id="mbFocus" type="button" aria-pressed="false">◉ Odak</button>
+    <button id="mbFocus" type="button" aria-pressed="false">◉ Menüleri Gizle</button>
   </nav>
 
   <!-- GİRİŞ EKRANI -->

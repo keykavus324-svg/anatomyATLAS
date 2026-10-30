@@ -208,6 +208,10 @@ test('odak modu panelleri gizler ve önceki yerleşimi geri getirir', async () =
   assert.deepEqual([state.left, state.right, state.tools], [saved.left, saved.right, saved.tools]);
   state = workspaceForViewport(state, true);
   assert.deepEqual([state.left, state.right, state.tools], [false, false, true]);
+  // Sol paneli açmak, elle kapatılan sağ paneli seçimle geri açmaz.
+  state = toggleWorkspaceSection(state, 'left');
+  assert.equal(workspaceForSelection(state).right, false);
+  state = toggleWorkspaceSection(state, 'right');
   state = toggleWorkspaceSection(state, 'left');
   state = workspaceForSelection(state);
   assert.deepEqual([state.left, state.right], [false, true]);
@@ -229,6 +233,9 @@ test('panel düğmeleri erişilebilir ve geri açılabilir', () => {
     assert.match(html, new RegExp(`id="${button}"[^>]*aria-controls="${panel}"[^>]*aria-expanded=`));
   }
   assert.match(html, /id="mbFocus"[^>]*aria-pressed="false"/);
+  for (const [button, panel] of [['closeLeftPanel', 'leftPanel'], ['closeRightPanel', 'rightPanel'], ['reopenLeftPanel', 'leftPanel'], ['reopenRightPanel', 'rightPanel']]) {
+    assert.match(html, new RegExp(`id="${button}"[^>]*aria-controls="${panel}"`));
+  }
 });
 
 test('gizlenen yapılar taraf bazında veya bütünüyle geri alınabilir', async () => {

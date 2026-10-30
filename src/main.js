@@ -939,7 +939,7 @@ function syncWorkspace() {
   left.textContent = tr('☰ Sistemler', '☰ Systems', '☰ الأجهزة');
   right.textContent = tr('ℹ Bilgi', 'ℹ Info', 'ℹ معلومات');
   tools.textContent = tr('⚙ Araçlar', '⚙ Tools', '⚙ أدوات');
-  focus.textContent = workspace.focus ? tr('↶ Geri', '↶ Restore', '↶ استعادة') : tr('◉ Odak', '◉ Focus', '◉ تركيز');
+  focus.textContent = workspace.focus ? tr('↶ Menüleri Göster', '↶ Show menus', '↶ إظهار القوائم') : tr('◉ Menüleri Gizle', '◉ Hide menus', '◉ إخفاء القوائم');
   left.title = workspace.left ? tr('Sistemleri gizle', 'Hide systems', 'إخفاء الأجهزة') : tr('Sistemleri göster', 'Show systems', 'إظهار الأجهزة');
   right.title = workspace.right ? tr('Bilgi panelini gizle', 'Hide information panel', 'إخفاء لوحة المعلومات') : tr('Bilgi panelini göster', 'Show information panel', 'إظهار لوحة المعلومات');
   tools.title = workspace.tools ? tr('Araç çubuğunu gizle', 'Hide toolbar', 'إخفاء شريط الأدوات') : tr('Araç çubuğunu göster', 'Show toolbar', 'إظهار شريط الأدوات');
@@ -947,6 +947,15 @@ function syncWorkspace() {
   for (const button of [left, right, tools, focus]) button.setAttribute('aria-label', button.title);
   focus.setAttribute('aria-pressed', String(workspace.focus));
   focus.classList.toggle('active', workspace.focus);
+  for (const [key, closeId, reopenId] of [['left', 'closeLeftPanel', 'reopenLeftPanel'], ['right', 'closeRightPanel', 'reopenRightPanel']]) {
+    const close = $('#' + closeId), reopen = $('#' + reopenId);
+    close.textContent = tr('✕ Menüyü kapat', '✕ Close menu', '✕ إغلاق القائمة');
+    close.setAttribute('aria-label', key === 'left' ? tr('Sol menüyü kapat', 'Close left menu', 'إغلاق القائمة اليسرى') : tr('Sağ menüyü kapat', 'Close right menu', 'إغلاق القائمة اليمنى'));
+    reopen.hidden = workspace[key] || workspace.focus;
+    reopen.setAttribute('aria-expanded', String(workspace[key]));
+    reopen.textContent = key === 'left' ? tr('☰ Sistemler ›', '☰ Systems ›', '☰ الأجهزة ›') : tr('‹ ℹ Bilgi', '‹ ℹ Info', '‹ ℹ معلومات');
+    reopen.setAttribute('aria-label', key === 'left' ? tr('Sol menüyü aç', 'Open left menu', 'فتح القائمة اليسرى') : tr('Sağ menüyü aç', 'Open right menu', 'فتح القائمة اليمنى'));
+  }
   $('#app').classList.toggle('focus-mode', workspace.focus);
   positionWorkspaceControls();
 }
@@ -954,6 +963,9 @@ for (const [id, key] of [['mbLeft', 'left'], ['mbRight', 'right'], ['mbTools', '
   $('#' + id).onclick = () => { workspace = toggleWorkspaceSection(workspace, key); syncWorkspace(); };
 }
 $('#mbFocus').onclick = () => { workspace = toggleWorkspaceFocus(workspace); syncWorkspace(); };
+for (const [id, key] of [['closeLeftPanel', 'left'], ['closeRightPanel', 'right'], ['reopenLeftPanel', 'left'], ['reopenRightPanel', 'right']]) {
+  $('#' + id).onclick = () => { workspace = toggleWorkspaceSection(workspace, key); syncWorkspace(); };
+}
 workspaceMedia.addEventListener('change', (event) => { workspace = workspaceForViewport(workspace, event.matches); syncWorkspace(); });
 addEventListener('resize', positionWorkspaceControls);
 if ('ResizeObserver' in window) new ResizeObserver(positionWorkspaceControls).observe($('#bottomBar'));
