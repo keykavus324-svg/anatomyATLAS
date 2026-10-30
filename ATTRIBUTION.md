@@ -16,14 +16,16 @@ Bu klasörlerdeki 3B modeller ve tanım verileri, bu projenin eseri değildir:
 - Yapı tanımları çoğunlukla Wikipedia'dan alınmıştır (CC BY-SA 3.0 / GFDL).
 - Draco çözücü dosyaları (public/draco/): Google Draco (Apache-2.0).
 
-Ticari olmayan (NC) bileşenler nedeniyle bu veri paketinin dağıtım lisansı
-**CC BY-NC-SA 4.0**'tir. Bu uygulama eğitim amaçlıdır ve ticari değildir.
+Paketleyicinin `NQWRC-LICENSE.txt` dosyası dağıtımı CC BY-NC-SA 4.0 olarak
+nitelendirir. Ancak bileşenlerin şartları ayrı ayrı incelenmeli, lisansların
+birlikte dağıtıma uygunluğu doğrulanmalıdır. Özellikle Brainder ve White matter
+için kaynak bildiriminde lisans belirtilmemiştir; hakları kaynak sahibinden
+teyit edilmelidir. İç kulak ve böbrekteki NC şartları ticari kullanımı kısıtlar.
 
 ## Bu projenin katkısı
 
 - Türkçe arayüz, Türkçe yapı isimleri ve açıklamalar (`src/data.js`, `src/trmap.js`)
-- İki modlu görüntüleyici, katman soyma, sınav oyunu, canlı vital simülasyonu
-- Stilize prosedürel model (`src/body.js`) — tamamen bu projeye aittir.
+- 3B görüntüleyici, katman soyma, ders turları ve sınav oyunu
 
-Kodu yeniden dağıtırken yukarıdaki atıfları koruyunuz ve model verisini aynı
-lisansla paylaşınız.
+Yeniden kullanımda ilgili atıf, lisans bağlantısı, değişiklik bildirimi ve
+varsa aynı lisansla paylaşım şartlarına uyunuz. Bu dosya hukuki görüş değildir.

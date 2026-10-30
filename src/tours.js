@@ -1,4 +1,4 @@
-// Rehberli Ders Turları — adımlar INFO id ile tanımlanır (iki modelde de çözülür);
+// Rehberli Ders Turları — adımlar INFO id ile tanımlanır (atlas verisinde çözülür);
 // `real` verilirse Gerçek Atlas modunda o yapı anahtarı kullanılır (daha hassas odak).
 export const TOURS = [
   {
@@ -86,7 +86,7 @@ export const TOURS = [
       { info: 'aorta', title: 'Kirli Kan Yolda', text: 'Kalbin pompaladığı kanın yaklaşık %20’si doğrudan böbreklere gider — büyüklüklerine göre bu devasa bir paydır (dakikada ~1,2 litre). Amaç: kandaki atık, fazla su ve tuzu ayıklamak.' },
       { info: 'renal_vessels', real: 'Left renal artery', title: 'Böbrek Damarları', text: 'Kısa ama kalın böbrek atardamarı kanı yüksek basınçla böbreğe taşır; filtrasyonun itici gücü bu basınçtır. Temizlenmiş kan böbrek toplardamarından geri döner. Tansiyon ile böbreğin kadim dostluğu (ve bazen kavgası) buradan gelir.' },
       { info: 'kidneys', real: 'Kidney', title: 'Böbrekler: Günde 180 Litre Filtre', text: 'Her böbrekte ~1 milyon nefron, günde ~180 litre sıvıyı süzer; %99’u geri emilir, geriye ~1,5 litre idrar kalır. Böbrek ayrıca kan basıncını ve alyuvar üretimini (eritropoetin hormonu) da yönetir — sadece filtre değil, bir yönetim kurulu üyesi.' },
-      { info: 'kidneys', real: 'Ureter', realOnly: true, title: 'Üreterler: Peristaltik Boru Hattı', text: 'Böbrekten mesaneye uzanan 25-30 cm’lik bu borular, idrarı damla damla değil kasılma dalgalarıyla iter — baş aşağı dursan bile akış sürer. Böbrek taşı bu boruda takıldığında oluşan sancı, tıbbın en şiddetli ağrılarındandır.' },
+      { info: 'kidneys', real: 'Ureter', title: 'Üreterler: Peristaltik Boru Hattı', text: 'Böbrekten mesaneye uzanan 25-30 cm’lik bu borular, idrarı damla damla değil kasılma dalgalarıyla iter — baş aşağı dursan bile akış sürer. Böbrek taşı bu boruda takıldığında oluşan sancı, tıbbın en şiddetli ağrılarındandır.' },
       { info: 'bladder', real: 'Urinary bladder', title: 'Mesane: Esnek Depo', text: 'Boşken buruşuk bir kese, dolunca ~500 ml alan bir balon. Duvarındaki detrusor kası ve iki sfinkter kapısı sayesinde sosyal hayat mümkün. Gerilme reseptörleri ~250 ml’de beyne ilk "tuvalet yakın olabilir mi?" sinyalini gönderir. Arıtma turu tamam — su içmeyi unutma! 💧' },
     ],
   },
@@ -96,7 +96,7 @@ export const TOURS = [
     steps: [
       { info: 'eye', real: 'Anterior segment of eyeball', title: 'Göz Küresi: Canlı Kamera', text: 'Gözün kırma gücünün üçte ikisini kornea (öndeki saydam pencere) sağlar; mercek sadece ince ayar yapar. Retinadaki 120 milyon çomak ve 6 milyon koni hücresi ışığı sinyale çevirir. Retinada görüntü terstir — düzeltme beyne aittir.' },
       { info: 'optic_nerve', real: 'Optic nerve (II)', title: 'Görme Siniri', text: '~1,2 milyon liften oluşan bu kablo aslında beynin bir uzantısıdır (periferik sinir değil). Gözden çıktığı noktada fotoreseptör yoktur: o "kör noktayı" beyin, çevresine bakıp uydurarak doldurur — her an biraz fotoşoplu görürsün.' },
-      { info: 'optic_nerve', real: 'Optic chiasm', realOnly: true, title: 'Kiyazma: Liflerin Kavşağı', text: 'Burun tarafı retinadan gelen lifler burada çapraz yapar. Sonuç: sol görme alanın sağ beyinde, sağ görme alanın sol beyinde işlenir. Hipofiz tümörleri buraya bası yaparsa iki yandan "at gözlüğü" gibi görme kaybı olur — nörolojinin klasik ipucu.' },
+      { info: 'optic_nerve', real: 'Optic chiasm', title: 'Kiyazma: Liflerin Kavşağı', text: 'Burun tarafı retinadan gelen lifler burada çapraz yapar. Sonuç: sol görme alanın sağ beyinde, sağ görme alanın sol beyinde işlenir. Hipofiz tümörleri buraya bası yaparsa iki yandan "at gözlüğü" gibi görme kaybı olur — nörolojinin klasik ipucu.' },
       { info: 'brain', real: 'Occipital pole', title: 'Görme Korteksi: Filmin Perdesi', text: 'Sinyaller başın arkasındaki oksipital loba ulaşır. Görmek burada olur: kenarlar, renkler, hareket ayrı ayrı işlenip tek sahneye birleştirilir. Gözler kamera, bu lob ise sinema salonunun ta kendisi. Görme turu bitti — gözlerini kırpmayı unutma! 👁️' },
     ],
   },

@@ -1,11 +1,9 @@
 // CORPUS·3D — İnteraktif Anatomi Atlası (uygulama mantığı)
-// İki model: (1) Gerçek Atlas: açık kaynak Z-Anatomy (2.827 yapı)
-//            (2) Stilize Model: prosedürel canlı simülasyon (kalp, solunum, akış)
+// Gerçek anatomik model: açık kaynak Z-Anatomy veri kümesi.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { INFO, SYSTEMS } from './data.js';
-import { buildBody } from './body.js';
 import { loadRealBody, REAL_SYS_ORDER } from './realBody.js';
 import { TOURS } from './tours.js';
 import { createVisiblePickCache, targetOpacity } from './visibility.js';
@@ -105,13 +103,6 @@ const clipCor = new THREE.Plane(V3(0, 0, -1), 100);
 const clipPlanes = [clipPlane, clipSag, clipCor];
 const RENDER_ORDER = { bone: 1, joint: 1, organ: 2, muscle: 2, vessel: 3, lymph: 3, nerve: 3, skin: 6 };
 
-const PROC_SYS_ORDER = ['skin', 'muscle', 'bone', 'organ', 'vessel', 'nerve'];
-const PROC_LAYERS = {
-  deri:    { label: 'Deri',       v: { skin: 1 } },
-  kas:     { label: 'Kaslar',     v: { skin: .13, muscle: 1 } },
-  iskelet: { label: 'İskelet',    v: { bone: 1 } },
-  ic:      { label: 'İç Yapılar', v: { bone: .18, organ: 1, vessel: 1, nerve: 1 } },
-};
 const REAL_LAYERS = {
   kas:     { label: 'Kaslar',     v: { muscle: 1 } },
   iskelet: { label: 'İskelet',    v: { bone: 1, joint: 1 } },
@@ -125,23 +116,19 @@ function wrapModel(kind, built, extra = {}) {
     root: built.body || built.root,
     parts: built.parts, structures: built.structures, pickMeshes: built.pickMeshes,
     pickCache: createVisiblePickCache(built.pickMeshes),
-    flows: built.flows || [], animated: built.animated || null,
     db: extra.db, ids: extra.ids, sysOrder: extra.sysOrder, layers: extra.layers,
     defaultLayer: extra.defaultLayer,
     systems: Object.fromEntries(extra.sysOrder.map((s) => [s, 0])),
     fade: new Map(extra.ids.map((id) => [id, 0])),
     applied: new Map(),
-    heartMats: built.heartMats || [], meta: built.meta || null,
+    meta: built.meta || null,
   };
 }
-const procBuilt = buildBody();
-const PM = wrapModel('proc', procBuilt, {
-  db: INFO, ids: Object.keys(INFO).filter((id) => procBuilt.structures.has(id)),
-  sysOrder: PROC_SYS_ORDER, layers: PROC_LAYERS, defaultLayer: 'kas',
-});
-scene.add(PM.root);
+// Yükleme bitene kadar boş, etkileşimsiz atlas durumu; alternatif model yok.
 let RM = null;
-let M = PM; // aktif model
+let M = wrapModel('real', { root: new THREE.Group(), parts: [], structures: new Map(), pickMeshes: [], meta: { meshCount: 0, entryCount: 0 } }, {
+  db: {}, ids: [], sysOrder: REAL_SYS_ORDER, layers: REAL_LAYERS, defaultLayer: 'kas',
+});
 
 const xrayCache = new Map();
 function xrayMatFor(kind, id) {
@@ -173,9 +160,7 @@ function prepareModel(mdl) {
       mesh.renderOrder = RENDER_ORDER[p.system] ?? 1;
     }
   }
-  for (const f of mdl.flows) { f.mat.clippingPlanes = clipPlanes; f.points.renderOrder = 8; }
 }
-prepareModel(PM);
 
 /* ================= GORUNUM TEMALARI =================
    Renk doygunlugu/acikligi + puruzluluk + studo isiklari hep birlikte
@@ -206,7 +191,7 @@ function applyVisualTheme(name, { announce = false } = {}) {
   renderer.toneMappingExposure = T.exposure;
   scene.environmentIntensity = T.env;
   hemi.intensity = T.hemi; key.intensity = T.keyI; rim.intensity = T.rimI; fill.intensity = T.fillI;
-  for (const mdl of [PM, RM]) {
+  for (const mdl of [RM]) {
     if (!mdl) continue;
     for (const part of mdl.parts) for (const m of part.mats) {
       if (m.color && m.userData.baseColor !== undefined) {
@@ -240,12 +225,12 @@ applyGraphicsQuality(graphicsQuality);
 
 /* ================= DURUM ================= */
 const tourState = { active: null, idx: 0, isolatedId: null, savedClips: null, clipEdited: false };
-// Favoriler iki model için ayrı tutulur; aynı kimlik farklı yapılar anlamına gelebilir.
+// Eski gerçek atlas favorileri aynı depolama anahtarından korunur.
 const STAR_KEY = 'corpus-stars-v1';
-let stars = { real: [], proc: [] };
+let stars = { real: [] };
 try {
   const saved = JSON.parse(localStorage.getItem(STAR_KEY) || '{}');
-  for (const kind of ['real', 'proc']) if (Array.isArray(saved[kind]))
+  for (const kind of ['real']) if (Array.isArray(saved[kind]))
     stars[kind] = [...new Set(saved[kind].filter((x) => typeof x === 'string'))];
 } catch {}
 let starsOnly = false;
@@ -414,7 +399,6 @@ els.btnIsolate.onclick = () => {
 /* bilgiId -> gerçek modelde temsilci yapı anahtarı */
 const PREFERRED = { brain: 'Corpus callosum', heart: 'Left ventricle', lungs: 'Superior lobe of right lung', liver: 'Liver' };
 function findEntryByInfo(infoId) {
-  if (M.kind === 'proc') return infoId;
   if (PREFERRED[infoId] && M.structures.has(PREFERRED[infoId])) return PREFERRED[infoId];
   let best = null;
   for (const id of M.ids) if (M.db[id].infoId === infoId && (!best || id.length < best.length)) best = id;
@@ -502,14 +486,6 @@ function applyLayer(name) {
 }
 
 /* ================= HAZIR GÖRÜNÜMLER ================= */
-function overrideFromProc(spec) {
-  const map = new Map();
-  for (const [k, op] of Object.entries(spec)) {
-    if (PROC_SYS_ORDER.includes(k)) { for (const id of PM.ids) if (INFO[id].system === k) map.set(id, op); }
-    else if (INFO[k]) map.set(k, op);
-  }
-  return map;
-}
 function overrideWhereReal(re, boneGhost = .2) {
   const map = new Map();
   for (const id of M.ids) {
@@ -525,31 +501,12 @@ function afterPreset(selectKey, region) {
   if (region) animateCam(region.p, region.t, 1.25);
 }
 const PRESETS = {
-  dolanim() {
-    if (M.kind === 'proc') { state.override = overrideFromProc({ bone: .13, vessel: 1, lungs: .16 }); afterPreset('heart', REGIONS.gogus); }
-    else { setSystems({ vessel: 1, bone: .15, organ: .18 }); afterPreset(findEntryByInfo('heart'), REGIONS.gogus); }
-  },
-  solunum() {
-    if (M.kind === 'proc') { state.override = overrideFromProc({ trachea: 1, lungs: 1, diaphragm: 1, ribs: .32, sternum: .32, thoracic: .25 }); afterPreset('lungs', REGIONS.gogus); }
-    else { state.override = overrideWhereReal(/lung|trachea|bronch|laryng|diaphragm/i, .25); afterPreset(findEntryByInfo('lungs'), REGIONS.gogus); }
-  },
-  sindirim() {
-    if (M.kind === 'proc') { state.override = overrideFromProc({ esophagus: 1, stomach: 1, liver: 1, gallbladder: 1, pancreas: 1, small_intestine: 1, large_intestine: 1, lumbar: .25, pelvis: .25, sacrum: .25 }); afterPreset('liver', REGIONS.karin); }
-    else { state.override = overrideWhereReal(/liver|gallbladder|stomach|colon|duoden|jejun|ileum|oesophag|esophag|pancrea|appendix|caecum|cecum|rectum|bile duct/i, .2); afterPreset(findEntryByInfo('liver'), REGIONS.karin); }
-  },
-  sinir() {
-    if (M.kind === 'proc') { state.override = overrideFromProc({ nerve: 1, eye: 1, cranium: .14, cervical: .2, thoracic: .2, lumbar: .2, sacrum: .2 }); afterPreset('brain', { p: V3(5.6, 7.2, 10.5), t: V3(0, 6.2, 0) }); }
-    else { setSystems({ nerve: 1, bone: .14 }); afterPreset(findEntryByInfo('brain'), { p: V3(5.6, 7.2, 10.5), t: V3(0, 6.2, 0) }); }
-  },
+  dolanim() { setSystems({ vessel: 1, bone: .15, organ: .18 }); afterPreset(findEntryByInfo('heart'), REGIONS.gogus); },
+  solunum() { state.override = overrideWhereReal(/lung|trachea|bronch|laryng|diaphragm/i, .25); afterPreset(findEntryByInfo('lungs'), REGIONS.gogus); },
+  sindirim() { state.override = overrideWhereReal(/liver|gallbladder|stomach|colon|duoden|jejun|ileum|oesophag|esophag|pancrea|appendix|caecum|cecum|rectum|bile duct/i, .2); afterPreset(findEntryByInfo('liver'), REGIONS.karin); },
+  sinir() { setSystems({ nerve: 1, bone: .14 }); afterPreset(findEntryByInfo('brain'), { p: V3(5.6, 7.2, 10.5), t: V3(0, 6.2, 0) }); },
   iskelet() { applyLayer('iskelet'); animateCam(HOME_POS, HOME_TGT, 1.2); },
-  kas() {
-    if (M.kind === 'proc') {
-      setSystems({ muscle: 1 });
-      $$('#layerSeg button').forEach((b) => b.classList.toggle('active', b.dataset.layer === 'kas'));
-      $('#layerName').textContent = 'Kas Posteri';
-    } else applyLayer('kas');
-    animateCam(HOME_POS, HOME_TGT, 1.2);
-  },
+  kas() { applyLayer('kas'); animateCam(HOME_POS, HOME_TGT, 1.2); },
 };
 $$('#presetList button').forEach((b) => b.onclick = () => PRESETS[b.dataset.preset]());
 
@@ -683,11 +640,9 @@ document.addEventListener('click', (e) => { if (!e.target.closest('.search-wrap'
 /* ================= ALT BAR ================= */
 function syncRange(el) { el.style.setProperty('--v', el.value + '%'); }
 const rngExplode = $('#rngExplode'), rngClip = $('#rngClip'), rngClipSag = $('#rngClipSag'), rngClipCor = $('#rngClipCor');
-let diaExplodeY = PM.animated.diaphragm ? PM.animated.diaphragm.position.y : 0;
 function applyExplode(mdl = M) {
   for (const p of mdl.parts) {
     p.group.position.copy(p.home).addScaledVector(p.dir, state.explode * 1.7 * p.factor);
-    if (mdl.animated && mdl.animated.diaphragm && p.group === mdl.animated.diaphragm) diaExplodeY = p.group.position.y;
   }
 }
 rngExplode.addEventListener('input', () => { state.explode = rngExplode.value / 100; syncRange(rngExplode); applyExplode(); });
@@ -723,8 +678,6 @@ function applyEntryFade(id, cur) {
     const visible = cur > .02 && !(M.kind === 'real' && p.isFascia && !state.showFascia);
     if (p.group.visible !== visible) { p.group.visible = visible; M.pickCache.invalidate(); }
     if (!p.group.visible) continue;
-    const cast = cur > .85 && !state.xray && M.kind === 'proc';
-    for (const mesh of p.meshes) mesh.castShadow = cast;
     const mats = (state.xray && id !== state.selected) ? [xrayMatFor(M.kind, id)] : p.mats;
     for (const m of mats) {
       const op = cur * (m.userData.baseOpacity ?? 1);
@@ -805,7 +758,7 @@ function randomFact() {
   src.textContent = `— ${INFO[id].name} (${INFO[id].latin}) · karta git →`;
   src.style.cursor = 'pointer';
   src.onclick = () => {
-    const target = M.kind === 'proc' ? id : findEntryByInfo(id);
+    const target = findEntryByInfo(id);
     if (target) select(target, { ensure: true, focus: true });
   };
 }
@@ -865,11 +818,6 @@ const LABEL_INFO_IDS = ['brain', 'cerebellum', 'cranium', 'mandible', 'eye', 'tr
   'diaphragm', 'liver', 'stomach', 'kidneys', 'small_intestine', 'bladder', 'ribs', 'sternum', 'clavicle',
   'humerus', 'radius', 'pelvis', 'femur', 'patella', 'tibia', 'pectoralis', 'deltoid', 'biceps', 'trapezius',
   'latissimus', 'rectus_abdominis', 'gluteus', 'quadriceps', 'gastrocnemius', 'spinal_cord', 'sciatic', 'skin'];
-const ANCHOR_OVERRIDE = {
-  ribs: V3(1.02, 7.2, .1), spinal_cord: V3(0, 7.0, -.42), aorta: V3(.1, 6.3, -.28),
-  lungs: V3(.62, 7.5, .35), skin: V3(-1.4, 7.6, .3), small_intestine: V3(.3, 5.0, .42),
-  heart: V3(.2, 7.15, .45), trachea: V3(0, 8.3, .2),
-};
 let labelSpecs = [];
 function buildLabels() {
   labelsWrap.innerHTML = '';
@@ -877,28 +825,15 @@ function buildLabels() {
   labelSpecs = [];
   const SVGNS = 'http://www.w3.org/2000/svg';
   const specs = [];
-  if (M.kind === 'proc') {
-    for (const id of LABEL_INFO_IDS) {
-      if (!M.structures.has(id)) continue;
-      const first = M.structures.get(id).parts[0];
-      const anchor = ANCHOR_OVERRIDE[id] ? ANCHOR_OVERRIDE[id].clone()
-        : new THREE.Box3().setFromObject(first.group).getCenter(new THREE.Vector3());
-      specs.push({
-        id, getWorld: (out) => out.copy(anchor).add(_tc.copy(first.group.position).sub(first.home)),
-      });
-    }
-  } else {
-    for (const infoId of LABEL_INFO_IDS) {
-      if (infoId === 'skin') continue;
-      const key2 = findEntryByInfo(infoId);
-      if (!key2) continue;
-      const first = M.structures.get(key2).parts[0];
-      const mesh0 = first.meshes[0];
-      const center = new THREE.Box3().setFromObject(mesh0).getCenter(new THREE.Vector3());
-      const w0 = mesh0.getWorldPosition(new THREE.Vector3());
-      const delta = center.sub(w0);
-      specs.push({ id: key2, getWorld: (out) => { mesh0.getWorldPosition(out); out.add(delta); } });
-    }
+  for (const infoId of LABEL_INFO_IDS) {
+    const key2 = findEntryByInfo(infoId);
+    if (!key2) continue;
+    const first = M.structures.get(key2).parts[0];
+    const mesh0 = first.meshes[0];
+    const center = new THREE.Box3().setFromObject(mesh0).getCenter(new THREE.Vector3());
+    const w0 = mesh0.getWorldPosition(new THREE.Vector3());
+    const delta = center.sub(w0);
+    specs.push({ id: key2, getWorld: (out) => { mesh0.getWorldPosition(out); out.add(delta); } });
   }
   for (const sp of specs) {
     const d = M.db[sp.id];
@@ -945,40 +880,6 @@ function updateLabels() {
   }
 }
 
-/* ================= CANLI SİMÜLASYON ================= */
-let bpm = 72, bpmTarget = 72, respRate = 12;
-let beatAcc = 0, respAcc = 0, flowT = 0;
-const gauss = (x, c, w) => Math.exp(-Math.pow((x - c) / w, 2));
-function ecgWave(p) {
-  return .13 * gauss(p, .18, .032) - .13 * gauss(p, .30, .011) + 1.0 * gauss(p, .33, .013)
-       - .24 * gauss(p, .365, .012) + .24 * gauss(p, .56, .046);
-}
-const ecgCtx = $('#ecg').getContext('2d');
-function drawECG() {
-  const W = 520, H = 110, base = 72;
-  ecgCtx.clearRect(0, 0, W, H);
-  ecgCtx.strokeStyle = 'rgba(52,211,153,.13)'; ecgCtx.lineWidth = 1;
-  for (let x = 0; x < W; x += 26) { ecgCtx.beginPath(); ecgCtx.moveTo(x, 0); ecgCtx.lineTo(x, H); ecgCtx.stroke(); }
-  for (let y = 0; y < H; y += 22) { ecgCtx.beginPath(); ecgCtx.moveTo(0, y); ecgCtx.lineTo(W, y); ecgCtx.stroke(); }
-  ecgCtx.strokeStyle = '#34d399'; ecgCtx.lineWidth = 2.4;
-  ecgCtx.shadowColor = 'rgba(52,211,153,.75)'; ecgCtx.shadowBlur = 9;
-  ecgCtx.beginPath();
-  const pxPerBeat = 150;
-  for (let x = 0; x <= W; x += 2) {
-    const beats = beatAcc - (W - x) / pxPerBeat;
-    const p = ((beats % 1) + 1) % 1;
-    const y = base - ecgWave(p) * 52;
-    x === 0 ? ecgCtx.moveTo(x, y) : ecgCtx.lineTo(x, y);
-  }
-  ecgCtx.stroke(); ecgCtx.shadowBlur = 0;
-}
-setInterval(() => {
-  $('#vBpm').innerHTML = `${Math.round(bpm + Math.sin(Date.now() / 9000) * 1.5)} <small>bpm</small>`;
-  $('#vSpo2').textContent = '%' + (98 + Math.round(Math.sin(Date.now() / 17000)));
-  $('#vResp').innerHTML = `${Math.round(respRate)} <small>/dk</small>`;
-}, 1000);
-
-/* ================= SINAV MODU ================= */
 /* ================= DERS TURLARI ================= */
 function buildTourList() {
   const list = $('#tourList');
@@ -1017,7 +918,7 @@ function applyTourStep() {
   const t = tourState.active;
   if (!t) return;
   const step = t.steps[tourState.idx];
-  const id = M.kind === 'proc' && step.realOnly ? null : tourStepId(step);
+  const id = tourStepId(step);
   if (tourState.isolatedId && state.isolate === tourState.isolatedId) state.isolate = null;
   tourState.isolatedId = null;
   if (id) {
@@ -1028,7 +929,7 @@ function applyTourStep() {
   $('#tourTitle').textContent = t.title;
   $('#tourCounter').textContent = `Adım ${tourState.idx + 1}/${t.steps.length}`;
   $('#tourStepTitle').textContent = step.title;
-  $('#tourText').textContent = step.text + (!id ? ' (Bu yapı stilize modelde ayrı gösterilmez; Gerçek Atlas’a geçin.)' : '');
+  $('#tourText').textContent = step.text + (!id ? ' (Bu yapı atlas verisinde bulunamadı.)' : '');
   $('#tourDots').innerHTML = t.steps.map((_, i) => `<i class="${i === tourState.idx ? 'on' : ''}"></i>`).join('');
   $('#tourPrev').disabled = tourState.idx === 0;
   $('#tourNext').textContent = tourState.idx === t.steps.length - 1 ? 'Bitir ✓' : 'Sonraki →';
@@ -1101,12 +1002,7 @@ function startQuiz(cat) {
   if (state.labels) $('#tgLabels').click();
   select(null);
   if (cat === 'stars') setSystems(Object.fromEntries(M.sysOrder.map((s) => [s, 1])));
-  else if (M.kind === 'proc') {
-    if (cat === 'bone') applyLayer('iskelet');
-    else if (cat === 'muscle') setSystems({ muscle: 1 });
-    else if (cat === 'organ') setSystems({ bone: .18, organ: 1, vessel: 1 });
-    else setSystems({ bone: .14, nerve: 1 });
-  } else {
+  else {
     if (cat === 'bone') setSystems({ bone: 1, joint: 1 });
     else if (cat === 'muscle') setSystems({ muscle: 1 });
     else if (cat === 'organ') setSystems({ bone: .15, organ: 1, vessel: 1, lymph: 1 });
@@ -1117,7 +1013,6 @@ function startQuiz(cat) {
     idx: 0, score: 0, correct: 0, streak: 0, best: 0,
   });
   $('#quizHud').classList.remove('hidden');
-  bpmTarget = 96; respRate = 16;
   animateCam(HOME_POS, HOME_TGT, 1.1);
   setQuestion();
   clearInterval(quiz.timer);
@@ -1191,7 +1086,6 @@ function nextQuestion() {
 function endQuiz() {
   quiz.active = false; clearInterval(quiz.timer);
   $('#quizHud').classList.add('hidden');
-  bpmTarget = 72; respRate = 12;
 }
 function finishQuiz() {
   endQuiz();
@@ -1232,35 +1126,7 @@ function rebuildModelUI() {
   buildLabels();
   updateStats();
   updateCredit();
-  $$('#modeSeg button').forEach((b) => b.classList.toggle('active', b.dataset.mode === M.kind));
 }
-function setMode(kind) {
-  if (kind === 'real' && !RM) { toast('⏳ Gerçek atlas hâlâ yükleniyor, bir saniye…'); return; }
-  if (quiz.active) endQuiz();
-  select(null);
-  state.hovered = null; state.isolate = null; state.override = null;
-  highlighted.clear(); flashState.clear();
-  PM.root.visible = kind === 'proc'; PM.pickCache.invalidate();
-  if (RM) { RM.root.visible = kind === 'real'; RM.pickCache.invalidate(); }
-  M = kind === 'proc' ? PM : RM;
-  if (contactBlob) contactBlob.visible = kind === 'real';
-  $('#fasciaToggle').hidden = kind !== 'real';
-  rngExplode.value = 0; state.explode = 0; syncRange(rngExplode);
-  rebuildModelUI();
-  applyLayer(M.defaultLayer);
-  applyExplode();
-  if (state.xray) refreshXray();
-  if (tourState.active) applyTourStep();
-}
-$$('#modeSeg button').forEach((b) => b.onclick = () => {
-  if (b.dataset.mode === M.kind) return;
-  setMode(b.dataset.mode);
-  if (!tourState.active) animateCam(HOME_POS, HOME_TGT, 1.2);
-  toast(M.kind === 'real'
-    ? `🫀 Gerçek Atlas: ${M.meta.entryCount} yapı — tıklayıp keşfedin!`
-    : '🎨 Stilize Model: atan kalp ve akan kan simülasyonu aktif.');
-});
-
 /* ================= GÖRÜNÜM BAĞLANTISI ================= */
 function snapshotView() {
   if (state.override && state.override.size > 200) {
@@ -1284,8 +1150,8 @@ function restoreView() {
     const data = JSON.parse(decodeURIComponent(location.hash.slice(3)));
     const vec = (v) => Array.isArray(v) && v.length === 3 && v.every((x) => typeof x === 'number' && Number.isFinite(x) && Math.abs(x) <= 100);
     if (data.v !== 1 || !['real', 'proc'].includes(data.mode) || !vec(data.camera) || !vec(data.target)) throw Error('Geçersiz bağlantı');
-    if (data.mode === 'real' && !RM) { toast('Bağlantıdaki gerçek atlas yüklenemedi.', 'bad'); return false; }
-    setMode(data.mode);
+    if (data.mode === 'proc') { toast('Bu bağlantıdaki model artık kullanılmıyor.', 'bad'); return false; }
+    if (!RM) return false;
     setFasciaVisibility(!!data.fascia);
     if (VISUAL_THEMES[data.theme]) applyVisualTheme(data.theme);
     if (data.systems && typeof data.systems === 'object') {
@@ -1315,7 +1181,6 @@ function restoreView() {
 /* ================= ANA DÖNGÜ ================= */
 const clock = new THREE.Clock();
 const easeInOut = (t) => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-const _fp = new THREE.Vector3();
 rebuildModelUI();
 applyLayer(M.defaultLayer);
 applyExplode();
@@ -1348,62 +1213,6 @@ function tick() {
     if (last !== undefined && Math.abs(last - cur) < .003 && (cur === 0 || cur === tgt)) continue;
     applyEntryFade(id, cur);
   }
-  for (const f of M.flows) {
-    const k = M.fade.get(f.sid) ?? 0;
-    f.points.visible = k > .06;
-    f.mat.opacity = .95 * clamp(k, 0, 1);
-  }
-
-  /* nabız & solunum */
-  bpm += (bpmTarget - bpm) * Math.min(1, dt * .8);
-  beatAcc += dt * bpm / 60;
-  respAcc += dt * respRate / 60;
-  flowT += dt;
-  const phase = beatAcc % 1;
-  const pulse = gauss(phase, .33, .055) * .95 + gauss(phase, .55, .06) * .4;
-  if (M.kind === 'proc' && PM.animated.heart) {
-    const s = 1 + pulse * .085;
-    PM.animated.heart.scale.set(s, s, s);
-    const breath = (Math.sin(respAcc * Math.PI * 2 - Math.PI / 2) + 1) / 2;
-    for (const L of PM.animated.lungs) {
-      L.group.scale.set(L.base.x * (1 + breath * .075), L.base.y * (1 + breath * .04), L.base.z * (1 + breath * .075));
-    }
-    if (PM.animated.diaphragm) {
-      PM.animated.diaphragm.position.y = diaExplodeY - breath * .14;
-      PM.animated.diaphragm.scale.y = 1 - breath * .3;
-    }
-  } else if (M.kind === 'real' && RM) {
-    const heartSelected = state.selected && M.db[state.selected] && M.db[state.selected].infoId === 'heart';
-    if (!heartSelected && !state.xray) {
-      for (const m of RM.heartMats) {
-        if (!m.emissive) continue;
-        m.emissive.setHex(0x5a0a12);
-        m.emissiveIntensity = .25 + pulse * .85;
-      }
-    }
-  }
-  drawECG();
-
-  /* kan akışı & sinir impulsları (stilize model) */
-  for (const f of M.flows) {
-    if (!f.points.visible) continue;
-    const arr = f.points.geometry.attributes.position.array;
-    for (let i = 0; i < f.count; i++) {
-      let tt;
-      if (f.type === 'nerve') {
-        const rr = (f.offsets[i] + flowT * f.speed) % 1.5;
-        if (rr > 1) { arr[i * 3 + 1] = -999; continue; }
-        tt = rr;
-      } else {
-        tt = (f.offsets[i] + flowT * f.speed) % 1;
-        if (f.reverse) tt = 1 - tt;
-      }
-      f.curve.getPointAt(tt, _fp);
-      arr[i * 3] = _fp.x; arr[i * 3 + 1] = _fp.y; arr[i * 3 + 2] = _fp.z;
-    }
-    f.points.geometry.attributes.position.needsUpdate = true;
-  }
-
   /* seçim nabzı + flaş */
   let flashChanged = false;
   for (const [id, f] of flashState) if (performance.now() > f.expires) { flashState.delete(id); flashChanged = true; }
@@ -1457,9 +1266,7 @@ addEventListener('resize', () => {
     setTimeout(() => {
       $('#intro').classList.add('done');
       if (!restoreView()) animateCam(HOME_POS, HOME_TGT, 1.9);
-      setTimeout(() => toast(M.kind === 'real'
-        ? `👋 HOŞ GELDİNİZ! CORPUS·3D içinde ${M.meta.entryCount} yapı sizi bekliyor. Bir kasa tıklayın!`
-        : '👋 HOŞ GELDİNİZ! Bir kasa tıklayın ya da "İç Yapılar" katmanına geçip atan kalbi izleyin.'), 1300);
+      setTimeout(() => toast(`👋 HOŞ GELDİNİZ! CORPUS·3D içinde ${M.meta.entryCount} yapı sizi bekliyor. Bir kasa tıklayın!`), 1300);
     }, wait);
   };
   loadRealBody({
@@ -1468,22 +1275,23 @@ addEventListener('resize', () => {
     RM = wrapModel('real', built, {
       db: built.db, ids: built.ids, sysOrder: REAL_SYS_ORDER, layers: REAL_LAYERS, defaultLayer: 'kas',
     });
-    RM.heartMats = built.heartMats; RM.meta = built.meta;
-    RM.root.visible = false;
+    M = RM;
     scene.add(RM.root);
     prepareModel(RM);
     applyVisualTheme(visualTheme);
+    if (contactBlob) contactBlob.visible = true;
+    rebuildModelUI();
+    applyLayer(M.defaultLayer);
+    applyExplode();
     console.log(`Gerçek atlas hazır: ${built.meta.meshCount} parça, ${built.meta.entryCount} yapı.`);
-    setMode('real');
     finishIntro();
   }).catch((err) => {
     console.error('Gerçek atlas yüklenemedi:', err);
-    msg.textContent = 'Gerçek atlas yüklenemedi — stilize modelle devam ediliyor.';
-    finishIntro();
-    setTimeout(() => toast('⚠️ Gerçek atlas yüklenemedi; stilize model aktif. Bağlantınızı kontrol edip yenileyin.', 'bad'), 1600);
+    msg.textContent = 'Atlas yüklenemedi. İnternet bağlantınızı kontrol edip tekrar deneyin.';
+    $('#introRetry').classList.remove('hidden');
   });
 }
-console.log(`CORPUS·3D: stilize model ${PM.ids.length} yapı ile hazır; gerçek atlas yükleniyor…`);
+$('#introRetry').onclick = () => location.reload();
 
 // Çevrimdışı kurulum yalnızca üretim derlemesinde etkin.
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {

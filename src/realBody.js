@@ -141,13 +141,11 @@ export async function loadRealBody({ onProgress = () => {} } = {}) {
   }
 
   // atan kalp nabzı için kalbe ait malzemeler (infoId==='heart' parçaları)
-  const heartMats = [];
-  for (const p of parts) if (db[p.id] && db[p.id].infoId === 'heart') heartMats.push(...p.mats);
 
   draco.dispose();
   return {
     root, parts, structures, pickMeshes, flows: [], db,
-    ids: [...structures.keys()], heartMats,
+    ids: [...structures.keys()],
     meta: { meshCount: parts.length, entryCount: structures.size, scale: S },
   };
 }

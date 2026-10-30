@@ -69,10 +69,7 @@
 
   <!-- SOL PANEL -->
   <aside id="leftPanel" class="panel">
-    <div id="modeSeg" role="group" aria-label="Model seçimi">
-      <button data-mode="real" class="active"> Gerçek Atlas<small>2.827 model parçası</small></button>
-      <button data-mode="proc">Stilize Model<small>canlı simülasyon</small></button>
-    </div>
+    <div class="atlas-panel-title"><strong>Anatomi Atlası</strong><small>İNSAN VÜCUDU · 3B</small></div>
     <div class="tabs">
       <button class="tab active" data-tab="systems">Sistemler</button>
       <button class="tab" data-tab="structures">Yapılar <span id="structCount" class="pill"></span></button>
@@ -138,26 +135,11 @@
 
   <!-- SAĞ PANEL -->
   <aside id="rightPanel" class="panel">
-    <div id="vitals">
-      <div class="vitals-head">
-        <span class="live-dot"></span> CANLI VİTAL BULGULAR
-        <span class="vitals-note">simüle model ayakta, bilinç açık :)</span>
-      </div>
-      <canvas id="ecg" width="520" height="110"></canvas>
-      <div class="vitals-grid">
-        <div><label>KALP HIZI</label><b id="vBpm">72 <small>bpm</small></b></div>
-        <div><label>SpO₂</label><b id="vSpo2">%98</b></div>
-        <div><label>SOLUNUM</label><b id="vResp">12 <small>/dk</small></b></div>
-        <div><label>TANSİYON</label><b>120/80</b></div>
-      </div>
-    </div>
-
     <div id="infoDefault">
       <h2>Keşfetmeye başla</h2>
       <p class="muted" id="defaultLead">Model üzerinde herhangi bir yapıyı tıklayın —
-        bilgi kartı burada açılır. <b>Gerçek Atlas</b> 1.600'den fazla
-        anatomik yapı sunar; <b>Stilize Model</b>'de
-        kalp atar, akciğerler nefes alır, kan ve sinir impulsları akar.</p>
+        bilgi kartı burada açılır. Atlas 1.600'den fazla anatomik yapı
+        içerir; katmanları açıp kapatarak insan vücudunu keşfedebilirsiniz.</p>
       <ul class="howto">
         <li><b>Sürükle</b> döndür · <b>Tekerlek</b> yakınlaştır</li>
         <li><b>Tıkla</b> yapı seç · <b>Çift tık</b> odaklan</li>
@@ -311,7 +293,7 @@
         <p><b>Muhammet TUĞRUL</b> · CORPUS·3D tasarım ve geliştirme.</p>
       </div>
       <div class="credit-block">
-        <h3>Gerçek Atlas modeli (varsayılan)</h3>
+        <h3>Anatomik model verileri</h3>
         <p>2.827 parçalı gerçek anatomik model, açık kaynak
           <a href="https://github.com/Z-Anatomy/Models-of-human-anatomy" target="_blank" rel="noopener">Z-Anatomy</a> projesinin
           <a href="https://dbarchive.biosciencedbc.jp/en/bodyparts3d/" target="_blank" rel="noopener">BodyParts3D</a>
@@ -324,16 +306,11 @@
           “Cranial Nerves and Foramina” — University of Dundee, CAHID (CC BY 4.0);
           “Anatomy of the Inner Ear” — University of Dundee School of Medicine
           (CC BY-NC-SA 4.0); “Kidney” — lissiecowley (CC BY-NC 4.0).
-          İç kulak ve böbrek bileşenleri nedeniyle bu dağıtımın geçerli lisansı
-          <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener">CC BY-NC-SA 4.0</a>'tir. Tanımlar çoğunlukla Wikipedia'dan
-          alınmıştır (CC BY-SA 3.0 / GFDL). Ayrıntılar: ATTRIBUTION.md ve
-          modelle birlikte sunulan lisans dosyaları.</p>
-      </div>
-      <div class="credit-block">
-        <h3>Stilize canlı model</h3>
-        <p>Atan kalp, solunum ve akış simülasyonlu model, bu proje için
-          Three.js ile tamamen prosedürel üretilmiştir. Türkçe anatomi
-          içerikleri eğitim amaçlı özetlerdir; klinik karar için kullanılmaz.</p>
+          İç kulak ve böbrek ticari olmayan kullanım şartları taşır. Brainder ve
+          White matter için kaynak bildiriminde lisans belirtilmediğinden haklar
+          ayrıca doğrulanmalıdır. Tanımlar çoğunlukla Wikipedia'dan alınmıştır
+          (CC BY-SA 3.0 / GFDL). Bileşenlerin lisanslarını ve uyumluluğunu
+          kontrol edin; ayrıntılar ATTRIBUTION.md ve model lisans dosyalarındadır.</p>
       </div>
       <div class="credit-block">
         <h3>Türkçe içerik ve arayüz</h3>
@@ -360,6 +337,7 @@
       <p>İNSAN VÜCUDU · KATMAN KATMAN</p>
       <div class="intro-bar"><i id="introFill"></i></div>
       <small id="introMsg">Anatomi atlası yükleniyor…</small>
+      <button id="introRetry" class="btn-soft hidden" type="button">Yeniden dene</button>
     </div>
   </div>
 </div>

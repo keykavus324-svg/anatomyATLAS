@@ -5,20 +5,13 @@ import vm from 'node:vm';
 import { INFO } from '../src/data.js';
 import { TOURS } from '../src/tours.js';
 import { mapToInfo } from '../src/trmap.js';
-import { buildBody } from '../src/body.js';
-
-// CanvasTexture için yalnızca çizim API'si gereklidir; WebGL ortamı gerekmez.
-const ctx = new Proxy({}, { get: (_obj, key) => key === 'createRadialGradient' ? () => ({ addColorStop() {} }) : () => {}, set: () => true });
-globalThis.document = { createElement: () => ({ getContext: () => ctx }) };
-const proc = buildBody();
 const data = JSON.parse(readFileSync('public/data/systems.json', 'utf8'));
 const names = [...new Set(Object.values(data).flat().map((name) => name.replace(/\.[lr]$/, '')))];
 
-test('tüm ders adımları iki modelde çözülür veya gerçek modele özel işaretlenir', () => {
+test('tüm ders adımları atlas verisinde çözülür', () => {
   assert.equal(TOURS.length, 8);
   for (const tour of TOURS) for (const step of tour.steps) {
     assert.ok(INFO[step.info], `${tour.id}: bilgi anahtarı ${step.info}`);
-    if (!step.realOnly) assert.ok(proc.structures.has(step.info), `${tour.id}: stilize ${step.info}`);
     if (step.real) assert.ok(names.includes(step.real), `${tour.id}: gerçek ${step.real}`);
     else assert.ok(names.some((name) => mapToInfo(name) === step.info), `${tour.id}: gerçek ${step.info}`);
   }
@@ -125,4 +118,16 @@ test('proje sahibi görünür; veri kaynağı ve zorunlu atıflar kaynaklar böl
   assert.match(manifest.description, /Muhammet TUĞRUL/);
   assert.doesNotMatch(manifest.description, /Z-Anatomy/i);
   assert.match(readFileSync('README.md', 'utf8'), /Muhammet TUĞRUL/);
+});
+
+
+test('yalnızca gerçek atlas kullanılır; yükleme hatasında yeniden deneme sunulur', () => {
+  const main = readFileSync('src/main.js', 'utf8');
+  const html = readFileSync('index.html', 'utf8');
+  assert.doesNotMatch(main, /buildBody|setMode\(|from ['"]\.\/body\.js/);
+  assert.doesNotMatch(html, /modeSeg|Stilize Model|id="vitals"/);
+  assert.match(main, /data\.mode === 'proc'/); // eski bağlantıyı yanlış modele uygulama
+  assert.match(main, /Atlas yüklenemedi/);
+  assert.match(main, /introRetry.*classList\.remove\('hidden'\)/);
+  assert.match(html, /id="introRetry"/);
 });
