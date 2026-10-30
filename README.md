@@ -35,6 +35,9 @@ panel düzenini geri getirir. Seçili yapı ve kamera konumu korunur.
 - 🎯 **Sınav Modu** — "Şu yapıyı bul!" oyunu: süre, seri çarpanı,
   unvanlar (🌱 → 🏆 Anatomi Profesörü) ve tek tıkla
   **"Sonucu Kopyala & Meydan Oku"** butonu.
+- ✂️ **Yapı gizle** — seçili yapıyı bilgi kartından gizle; sol/sağ bir parça
+  seçilmişse yalnızca o taraf gizlenir. Bilgi panelindeki listeden tek tek veya
+  hepsini geri getirebilirsin. Bu işlem modeli kalıcı olarak değiştirmez.
 - 💥 **Patlat (explode)**, 🩻 **X-Işını**, 🔪 **üç eksenli kesit** (aksiyal, sagital, koronal), 🏷️ lider
   çizgili **etiketler**, bölgeye kamera uçuşu, hazır ders görünümleri.
 - 🎨 **Anatomik atlas sunumu** — mat, sıcak stüdyo ışığı, daha doğal kas

@@ -230,3 +230,38 @@ test('panel düğmeleri erişilebilir ve geri açılabilir', () => {
   }
   assert.match(html, /id="mbFocus"[^>]*aria-pressed="false"/);
 });
+
+test('gizlenen yapılar taraf bazında veya bütünüyle geri alınabilir', async () => {
+  const { hidePart, restorePart, isPartHidden, createVisiblePickCache } = await import('../src/visibility.js');
+  const hidden = new Map();
+  hidePart(hidden, 'Femur', 'l');
+  assert.equal(isPartHidden(hidden, 'Femur', 'l'), true);
+  assert.equal(isPartHidden(hidden, 'Femur', 'r'), false);
+  assert.equal(isPartHidden(hidden, 'Femur', null), false);
+  hidePart(hidden, 'Femur', 'r');
+  assert.equal(hidden.get('Femur').size, 2);
+  restorePart(hidden, 'Femur', 'l');
+  assert.equal(isPartHidden(hidden, 'Femur', 'l'), false);
+  assert.equal(isPartHidden(hidden, 'Femur', 'r'), true);
+  hidePart(hidden, 'Femur', null);
+  assert.deepEqual([...hidden.get('Femur')], ['all']);
+  assert.equal(isPartHidden(hidden, 'Femur', 'r'), true);
+  assert.equal(isPartHidden(hidden, 'Femur', null), true);
+  restorePart(hidden, 'Femur', 'all');
+  assert.equal(hidden.size, 0);
+  const root = { visible: true, parent: null }, left = { visible: true, parent: root }, right = { visible: true, parent: root };
+  const cache = createVisiblePickCache([left, right]);
+  assert.equal(cache.get().length, 2);
+  left.visible = false; cache.invalidate();
+  assert.deepEqual(cache.get(), [right]);
+  left.visible = true; cache.invalidate();
+  assert.equal(cache.get().length, 2);
+});
+
+test('bilgi kartında gizleme ve gizlenenleri geri getirme kontrolleri bulunur', () => {
+  const html = readFileSync('index.html', 'utf8');
+  assert.match(html, /id="btnHide"/);
+  assert.match(html, /id="hiddenTray"/);
+  assert.match(html, /id="btnRestoreAll"/);
+  assert.match(html, /id="hiddenList"/);
+});

@@ -135,6 +135,10 @@
 
   <!-- SAĞ PANEL -->
   <aside id="rightPanel" class="panel">
+    <section id="hiddenTray" class="hidden" aria-label="Gizlenen yapılar">
+      <div class="hidden-tray-head"><strong id="hiddenTitle">Gizlenen yapılar</strong><button type="button" id="btnRestoreAll">Hepsini geri getir</button></div>
+      <div id="hiddenList"></div>
+    </section>
     <div id="infoDefault">
       <div class="info-eyebrow"><span>ATLAS REHBERİ</span><span>✦</span></div>
       <h2>Keşfetmeye başla</h2>
@@ -190,6 +194,7 @@
       <div class="info-actions">
         <button id="btnFocus" class="btn-soft">◎ Odaklan</button>
         <button id="btnIsolate" class="btn-soft">◐ İzole Et</button>
+        <button id="btnHide" class="btn-soft" type="button">✂ Gizle</button>
         <button id="btnStar" class="btn-soft" title="Çalışma listeme ekle">☆ Yıldızla</button>
       </div>
     </div>

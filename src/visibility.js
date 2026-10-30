@@ -24,3 +24,23 @@ export function createVisiblePickCache(meshes) {
     },
   };
 }
+
+// Anatomy entries can contain both left and right meshes, or unsided meshes.
+// A whole-entry hide supersedes individual sides without deleting geometry.
+export function hidePart(hidden, id, side) {
+  const part = side === 'l' || side === 'r' ? side : 'all';
+  const sides = hidden.get(id) || new Set();
+  if (part === 'all') { sides.clear(); sides.add('all'); }
+  else if (!sides.has('all')) sides.add(part);
+  hidden.set(id, sides);
+}
+export function restorePart(hidden, id, side) {
+  const sides = hidden.get(id);
+  if (!sides) return;
+  sides.delete(side === 'l' || side === 'r' ? side : 'all');
+  if (!sides.size) hidden.delete(id);
+}
+export function isPartHidden(hidden, id, side) {
+  const sides = hidden.get(id);
+  return !!sides && (sides.has('all') || ((side === 'l' || side === 'r') && sides.has(side)));
+}

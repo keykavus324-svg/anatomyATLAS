@@ -6,7 +6,7 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { INFO, SYSTEMS } from './data.js';
 import { loadRealBody, REAL_SYS_ORDER } from './realBody.js';
 import { TOURS } from './tours.js';
-import { createVisiblePickCache, targetOpacity } from './visibility.js';
+import { createVisiblePickCache, targetOpacity, hidePart, restorePart, isPartHidden } from './visibility.js';
 import { configurePanControls } from './cameraPan.js';
 import { initialWorkspace, toggleWorkspaceSection, toggleWorkspaceFocus, workspaceForSelection, workspaceForViewport } from './workspace.js';
 import { pick, structureName, translateSystem, tourTitle, tourDesc, tourNote, captureStaticTranslations, arabicNames } from './i18n.js';
@@ -252,6 +252,7 @@ let starsOnly = false;
 const state = {
   selected: null, lastSide: null, hovered: null, isolate: null, override: null,
   xray: false, labels: false, spin: true, pan: false, explode: 0, showFascia: false,
+  hiddenParts: new Map(),
 };
 function targetFor(id) {
   return targetOpacity(id, M.db[id].system, state, M.systems);
@@ -408,6 +409,7 @@ function select(id, { focus = false, ensure = false, side = null } = {}) {
   $$('.struct-item').forEach((b) => b.classList.toggle('active', b.dataset.id === id));
   syncIsolateBtn();
   syncStarUI();
+  syncHideUI();
   refreshHighlights();
   if (state.xray) refreshXray();
 }
@@ -416,6 +418,64 @@ function syncIsolateBtn() {
   els.btnIsolate.classList.toggle('on', !!on);
   els.btnIsolate.textContent = on ? tr('◐ İzolasyonu Bırak', '◐ End isolation', '◐ إنهاء العزل') : tr('◐ İzole Et', '◐ Isolate', '◐ عزل');
 }
+// Hiding is reversible and acts on the clicked side when the source provides one.
+function refreshPartVisibility(id) {
+  if (!M.structures.has(id)) return;
+  M.applied.delete(id);
+  applyEntryFade(id, M.fade.get(id) ?? 0);
+}
+function structureFullyHidden(id) {
+  const structure = M.structures.get(id);
+  return !!structure && structure.parts.every((p) => isPartHidden(state.hiddenParts, id, p.group.userData.side));
+}
+function syncHideUI() {
+  const btn = $('#btnHide');
+  const blocked = quiz.active || !!tourState.active;
+  const hidden = state.selected && isPartHidden(state.hiddenParts, state.selected, state.lastSide);
+  btn.disabled = !!blocked;
+  btn.textContent = hidden ? tr('↶ Geri getir', '↶ Restore', '↶ استعادة') : tr('✂ Gizle', '✂ Hide', '✂ إخفاء');
+  btn.title = blocked
+    ? tr('Ders turu veya sınav sırasında gizleme kullanılamaz.', 'Hiding is unavailable during a tour or quiz.', 'الإخفاء غير متاح أثناء الجولة أو الاختبار.')
+    : state.lastSide
+      ? tr('Yalnızca seçilen tarafı gizle veya geri getir.', 'Hide or restore only the selected side.', 'إخفاء أو استعادة الجانب المحدد فقط.')
+      : tr('Bu yapının tamamını gizle veya geri getir.', 'Hide or restore the entire structure.', 'إخفاء أو استعادة التركيب بالكامل.');
+  btn.setAttribute('aria-pressed', String(!!hidden));
+  const tray = $('#hiddenTray'), list = $('#hiddenList');
+  list.replaceChildren();
+  const items = [...state.hiddenParts].flatMap(([id, sides]) => [...sides].map((side) => ({ id, side })));
+  tray.classList.toggle('hidden', !items.length);
+  $('#hiddenTitle').textContent = tr(`Gizlenen yapılar (${items.length})`, `Hidden structures (${items.length})`, `التراكيب المخفية (${items.length})`);
+  $('#btnRestoreAll').textContent = tr('Hepsini geri getir', 'Restore all', 'استعادة الكل');
+  tray.setAttribute('aria-label', tr('Gizlenen yapılar', 'Hidden structures', 'التراكيب المخفية'));
+  for (const { id, side } of items) {
+    if (!M.db[id]) continue;
+    const row = document.createElement('div'); row.className = 'hidden-entry';
+    const label = document.createElement('span'); label.dir = 'auto';
+    const sideLabel = side === 'l' ? tr('Sol', 'Left', 'يسار') : side === 'r' ? tr('Sağ', 'Right', 'يمين') : '';
+    label.textContent = nameOf(M.db[id]) + (sideLabel ? ` · ${sideLabel}` : '');
+    const restore = document.createElement('button'); restore.type = 'button';
+    restore.textContent = tr('Geri getir', 'Restore', 'استعادة');
+    restore.setAttribute('aria-label', tr(`${label.textContent}: geri getir`, `Restore ${label.textContent}`, `استعادة ${label.textContent}`));
+    restore.onclick = () => { restorePart(state.hiddenParts, id, side); refreshPartVisibility(id); syncHideUI(); };
+    row.append(label, restore); list.appendChild(row);
+  }
+}
+$('#btnHide').onclick = () => {
+  const id = state.selected, side = state.lastSide;
+  if (!id || quiz.active || tourState.active) return;
+  if (isPartHidden(state.hiddenParts, id, side)) restorePart(state.hiddenParts, id, state.hiddenParts.get(id)?.has('all') ? 'all' : side);
+  else {
+    hidePart(state.hiddenParts, id, side);
+    if (state.isolate === id) { state.isolate = null; syncIsolateBtn(); }
+    if (state.hovered === id) { state.hovered = null; tooltip.style.opacity = 0; }
+  }
+  refreshPartVisibility(id); refreshHighlights(); syncHideUI();
+};
+$('#btnRestoreAll').onclick = () => {
+  const ids = [...state.hiddenParts.keys()]; state.hiddenParts.clear();
+  for (const id of ids) refreshPartVisibility(id);
+  syncHideUI();
+};
 $('#infoClose').onclick = () => select(null);
 $('#btnFocus').onclick = () => state.selected && focusStructure(state.selected);
 els.btnIsolate.onclick = () => {
@@ -701,7 +761,9 @@ function applyEntryFade(id, cur) {
   const st = M.structures.get(id);
   if (!st) return;
   for (const p of st.parts) {
-    const visible = cur > .02 && !(M.kind === 'real' && p.isFascia && !state.showFascia);
+    const tourOverride = tourState.active && tourState.isolatedId === id;
+    const hidden = !tourOverride && isPartHidden(state.hiddenParts, id, p.group.userData.side);
+    const visible = cur > .02 && !hidden && !(M.kind === 'real' && p.isFascia && !state.showFascia);
     if (p.group.visible !== visible) { p.group.visible = visible; M.pickCache.invalidate(); }
     if (!p.group.visible) continue;
     const mats = (state.xray && id !== state.selected) ? [xrayMatFor(M.kind, id)] : p.mats;
@@ -751,6 +813,9 @@ $('#btnReset').onclick = () => resetAll();
 function resetAll() {
   select(null);
   state.isolate = null; state.override = null;
+  const hiddenIds = [...state.hiddenParts.keys()]; state.hiddenParts.clear();
+  for (const id of hiddenIds) refreshPartVisibility(id);
+  syncHideUI();
   if (state.xray) $('#tgXray').click();
   rngExplode.value = 0; state.explode = 0; syncRange(rngExplode); applyExplode();
   for (const [input] of clipControls) input.value = 100;
@@ -914,7 +979,7 @@ function buildLabels() {
     const center = new THREE.Box3().setFromObject(mesh0).getCenter(new THREE.Vector3());
     const w0 = mesh0.getWorldPosition(new THREE.Vector3());
     const delta = center.sub(w0);
-    specs.push({ id: key2, getWorld: (out) => { mesh0.getWorldPosition(out); out.add(delta); } });
+    specs.push({ id: key2, mesh: mesh0, getWorld: (out) => { mesh0.getWorldPosition(out); out.add(delta); } });
   }
   for (const sp of specs) {
     const d = M.db[sp.id];
@@ -940,7 +1005,7 @@ function updateLabels() {
   for (const L of labelSpecs) {
     i++;
     const hide = () => { L.div.style.display = 'none'; L.line.style.display = 'none'; L.dot.style.display = 'none'; };
-    if ((M.fade.get(L.id) ?? 0) < .55) { hide(); continue; }
+    if (!L.mesh.visible || (M.fade.get(L.id) ?? 0) < .55) { hide(); continue; }
     L.getWorld(_pv);
     if (clipPlanes.some((plane) => plane.distanceToPoint(_pv) < 0)) { hide(); continue; }
     _rad.set(_pv.x, 0, _pv.z);
@@ -1000,11 +1065,14 @@ function applyTourStep() {
   if (!t) return;
   const step = t.steps[tourState.idx];
   const id = tourStepId(step);
-  if (tourState.isolatedId && state.isolate === tourState.isolatedId) state.isolate = null;
+  const previousId = tourState.isolatedId;
+  if (previousId && state.isolate === previousId) state.isolate = null;
   tourState.isolatedId = null;
+  if (previousId) refreshPartVisibility(previousId);
   if (id) {
     select(id, { focus: true, ensure: true });
     state.isolate = id; tourState.isolatedId = id; syncIsolateBtn();
+    refreshPartVisibility(id);
   } else select(null);
   $('#tourIcon').textContent = t.icon;
   renderTourText();
@@ -1039,13 +1107,16 @@ function exitTour() {
   if (tourState.isolatedId && state.isolate === tourState.isolatedId) {
     state.isolate = null; syncIsolateBtn();
   }
+  const previousId = tourState.isolatedId;
   tourState.isolatedId = null;
+  if (previousId) refreshPartVisibility(previousId);
   if (tourState.savedClips && !tourState.clipEdited) {
     clipControls.forEach(([input], i) => { input.value = tourState.savedClips[i]; });
     updateClips();
   }
   tourState.savedClips = null;
   tourState.active = null;
+  syncHideUI();
   $('#tourPanel').classList.add('hidden');
 }
 $('#tourNext').onclick = () => stepTour(1);
@@ -1077,12 +1148,18 @@ function startQuiz(cat) {
   hideModals();
   let pool = M.ids.filter((id) => {
     const c = entryCategory(id);
+    if (structureFullyHidden(id)) return false;
     if (cat === 'stars') return isStarred(id);
     if (lang === 'tr' && !M.db[id].tr) return false;
     if (lang === 'ar' && !arabicNames[M.db[id].en]) return false;
     return cat === 'organ' ? (c === 'organ' || c === 'vessel') : c === cat;
   });
-  if (!pool.length) { toast(cat === 'stars' ? tr('Önce bir yapıyı yıldızla.', 'Favourite a structure first.', 'أضف تركيباً إلى المفضلة أولاً.') : tr('Bu kategoride soru bulunamadı.', 'No questions found in this category.', 'لا توجد أسئلة في هذه الفئة.'), 'bad'); $('#quizSetup').classList.remove('hidden'); return; }
+  if (!pool.length) {
+    const emptyStars = cat === 'stars' && !stars[M.kind].length;
+    toast(emptyStars ? tr('Önce bir yapıyı yıldızla.', 'Favourite a structure first.', 'أضف تركيباً إلى المفضلة أولاً.')
+      : tr('Sınav için görünür yapı bulunamadı. Gizlenenleri geri getirmeyi deneyin.', 'No visible quiz structures found. Try restoring hidden structures.', 'لا توجد تراكيب ظاهرة للاختبار. حاول استعادة التراكيب المخفية.'), 'bad');
+    $('#quizSetup').classList.remove('hidden'); return;
+  }
   if (tourState.active) exitTour();
   for (const [input] of clipControls) input.value = 100;
   updateClips();
@@ -1178,6 +1255,7 @@ function nextQuestion() {
 }
 function endQuiz() {
   quiz.active = false; clearInterval(quiz.timer);
+  syncHideUI();
   $('#quizHud').classList.add('hidden');
 }
 function finishQuiz() {
@@ -1222,13 +1300,14 @@ function rebuildModelUI() {
 }
 /* ================= GÖRÜNÜM BAĞLANTISI ================= */
 function snapshotView() {
-  if (state.override && state.override.size > 200) {
+  const hiddenEntries = [...state.hiddenParts].flatMap(([id, sides]) => [...sides].map((side) => [id, side]));
+  if ((state.override && state.override.size > 200) || hiddenEntries.length > 200) {
     toast(tr('Bu görünüm çok fazla yapı içeriyor. Paylaşmak için bir katman seçin.', 'This view contains too many structures. Select a layer to share.', 'يحتوي هذا العرض على تراكيب كثيرة. اختر طبقة للمشاركة.'), 'bad');
     return null;
   }
   return { v: 1, mode: M.kind, theme: visualTheme, camera: camera.position.toArray(), target: controls.target.toArray(),
     systems: M.systems, selected: state.selected, side: state.lastSide, isolate: state.isolate,
-    override: state.override ? [...state.override] : null, clips: clipControls.map(([el]) => +el.value),
+    override: state.override ? [...state.override] : null, hidden: hiddenEntries, clips: clipControls.map(([el]) => +el.value),
     explode: +rngExplode.value, xray: state.xray, labels: state.labels, fascia: state.showFascia };
 }
 $('#btnShare').onclick = async () => {
@@ -1256,6 +1335,13 @@ function restoreView() {
     }
     if (Array.isArray(data.override) && data.override.length <= 200) {
       state.override = new Map(data.override.filter((item) => Array.isArray(item) && M.structures.has(item[0]) && typeof item[1] === 'number' && Number.isFinite(item[1])).map(([id, val]) => [id, clamp(val, 0, 1)]));
+    }
+    if (Array.isArray(data.hidden) && data.hidden.length <= 200) {
+      for (const item of data.hidden) {
+        if (Array.isArray(item) && item.length === 2 && M.structures.has(item[0]) && ['l', 'r', 'all'].includes(item[1])) hidePart(state.hiddenParts, item[0], item[1] === 'all' ? null : item[1]);
+      }
+      for (const id of state.hiddenParts.keys()) refreshPartVisibility(id);
+      syncHideUI();
     }
     if (M.structures.has(data.selected)) select(data.selected, { side: ['l', 'r'].includes(data.side) ? data.side : null });
     if (M.structures.has(data.isolate)) { state.isolate = data.isolate; syncIsolateBtn(); }
@@ -1402,7 +1488,7 @@ function setLanguage(value) {
   languageNotice.classList.toggle('hidden', lang === 'tr');
   if (activeLayer) { const button = $(`#layerSeg button[data-layer="${activeLayer}"]`); if (button) button.classList.add('active'); $('#layerName').textContent = layerName(activeLayer); }
   else markLayerCustom();
-  setFasciaVisibility(state.showFascia); syncPan(); syncIsolateBtn(); syncStarUI(); syncWorkspace();
+  setFasciaVisibility(state.showFascia); syncPan(); syncIsolateBtn(); syncStarUI(); syncHideUI(); syncWorkspace();
   if (state.selected) fillInfo(state.selected);
   if (tourState.active) renderTourText();
   renderQuizText(); randomFact();
