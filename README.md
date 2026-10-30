@@ -8,6 +8,15 @@
 Atlas, 2.827 model parçasında 1.643 benzersiz yapı ve yedi anatomik sistem sunar.
 1.640 yapıda Türkçe ad, 510'unda ayrıntılı Türkçe bilgi kartı bulunur.
 
+## Dil ve kamera
+
+Üstteki menüden Türkçe, İngilizce veya Arapça seçilebilir; seçim tarayıcıda saklanır.
+İngilizce ve Arapça ders turları kısa özetlerdir. Arapça adlar seçili yapılarla
+sınırlıdır; çevrilmeyen adlar ve kaynak açıklamaları İngilizce gösterilir.
+Modeli sağ fare tuşuyla sürükleyerek veya **Kaydır** düğmesini açıp sol tuşla
+sürükleyerek yukarı, aşağı ve yanlara taşıyın. Dokunmatik ekranda iki parmakla
+sürükleyebilir veya Kaydır modunda tek parmak kullanabilirsiniz.
+
 ## Özellikler
 
 - 🔍 **1.643 yapı için arama** — Türkçe, İngilizce veya Latince (örn. `öçb`,

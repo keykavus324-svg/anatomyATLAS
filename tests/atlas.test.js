@@ -160,3 +160,37 @@ test('marka simgesi sitede, açılışta ve kurulumda kullanılır', () => {
   }
   assert.ok(manifest.icons.some((icon) => icon.purpose === 'maskable' && icon.src === 'icons/icon-maskable-512.png'));
 });
+
+test('dil seçimi veri kaynaklarını ve ders özetlerini doğru kullanır', async () => {
+  const { pick, structureName, translateSystem, tourTitle, tourNote, arabicNames } = await import('../src/i18n.js');
+  const entry = { name: 'Sol Karıncık', en: 'Left ventricle' };
+  assert.equal(structureName('tr', entry), 'Sol Karıncık');
+  assert.equal(structureName('en', entry), 'Left ventricle');
+  assert.equal(structureName('ar', entry), 'البطين الأيسر');
+  assert.equal(structureName('ar', { name: 'Çevrilmedi', en: 'Untranslated structure' }), 'Untranslated structure');
+  assert.equal(pick('ar', 'Türkçe', 'English', 'العربية'), 'العربية');
+  assert.equal(translateSystem('en', 'bone', 'İskelet'), 'Skeletal system');
+  for (const tour of TOURS) {
+    assert.notEqual(tourTitle('en', tour), tour.title);
+    for (const step of tour.steps) {
+      assert.notEqual(tourNote('en', step), 'Explore the highlighted structure.');
+      assert.match(tourNote('ar', step), /[\u0600-\u06ff]/);
+      if (step.real) assert.ok(arabicNames[step.real], step.real);
+    }
+  }
+});
+
+test('kamera kaydırma modu fare ve dokunmatik hareketlerini eşler', async () => {
+  const { configurePanControls } = await import('../src/cameraPan.js');
+  const { MOUSE, TOUCH } = await import('three');
+  const controls = { mouseButtons: {}, touches: {} };
+  configurePanControls(controls, false);
+  assert.equal(controls.mouseButtons.LEFT, MOUSE.ROTATE);
+  assert.equal(controls.mouseButtons.RIGHT, MOUSE.PAN);
+  assert.equal(controls.touches.ONE, TOUCH.ROTATE);
+  assert.equal(controls.touches.TWO, TOUCH.DOLLY_PAN);
+  configurePanControls(controls, true);
+  assert.equal(controls.mouseButtons.LEFT, MOUSE.PAN);
+  assert.equal(controls.touches.ONE, TOUCH.PAN);
+  assert.equal(controls.touches.TWO, TOUCH.DOLLY_PAN);
+});

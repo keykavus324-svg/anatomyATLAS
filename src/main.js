@@ -7,11 +7,23 @@ import { INFO, SYSTEMS } from './data.js';
 import { loadRealBody, REAL_SYS_ORDER } from './realBody.js';
 import { TOURS } from './tours.js';
 import { createVisiblePickCache, targetOpacity } from './visibility.js';
+import { configurePanControls } from './cameraPan.js';
+import { pick, structureName, translateSystem, tourTitle, tourDesc, tourNote, captureStaticTranslations, arabicNames } from './i18n.js';
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => [...document.querySelectorAll(s)];
 const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+let lang = (() => { try { const value = localStorage.getItem('tugrul-language'); return ['tr', 'en', 'ar'].includes(value) ? value : 'tr'; } catch { return 'tr'; } })();
+const tr = (turkish, english, arabic) => pick(lang, turkish, english, arabic);
+const nameOf = (d) => structureName(lang, d);
+const systemName = (id) => translateSystem(lang, id, SYSTEMS[id].tr);
+const translateStatic = captureStaticTranslations(document.body);
+const originalLicenceNotice = document.querySelector('.credit-block .lic').textContent;
+const layerName = (key) => ({
+  kas: tr('Kaslar', 'Muscles', 'العضلات'), iskelet: tr('İskelet', 'Skeleton', 'الهيكل العظمي'),
+  ic: tr('İç Yapılar', 'Internal', 'الأعضاء'), tumu: tr('Tümü', 'All', 'الكل'),
+})[key];
 
 /* ================= SAHNE ================= */
 const stage = $('#stage');
@@ -40,6 +52,8 @@ scene.environmentIntensity = .5;
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.target.set(0, 5, 0);
 controls.enableDamping = true; controls.dampingFactor = .06;
+controls.enablePan = true;
+controls.screenSpacePanning = true;
 controls.minDistance = .8; controls.maxDistance = 30;
 controls.maxPolarAngle = 1.66;
 controls.autoRotate = true; controls.autoRotateSpeed = .8;
@@ -206,7 +220,7 @@ function applyVisualTheme(name, { announce = false } = {}) {
     }
   }
   $$('#themeSeg button').forEach((b) => b.classList.toggle('active', b.dataset.vtheme === visualTheme));
-  if (announce) toast('🎨 Görünüm: ' + T.label);
+  if (announce) toast(tr('🎨 Görünüm: ', '🎨 Appearance: ', '🎨 المظهر: ') + ($(`#themeSeg button[data-vtheme="${visualTheme}"]`)?.textContent || T.label));
 }
 $$('#themeSeg button').forEach((b) => b.onclick = () => applyVisualTheme(b.dataset.vtheme, { announce: true }));
 applyVisualTheme(visualTheme);
@@ -236,7 +250,7 @@ try {
 let starsOnly = false;
 const state = {
   selected: null, lastSide: null, hovered: null, isolate: null, override: null,
-  xray: false, labels: false, spin: true, explode: 0, showFascia: false,
+  xray: false, labels: false, spin: true, pan: false, explode: 0, showFascia: false,
 };
 function targetFor(id) {
   return targetOpacity(id, M.db[id].system, state, M.systems);
@@ -339,26 +353,38 @@ function ensureVisible(id) {
 }
 function fillInfo(id) {
   const d = M.db[id];
-  els.badge.textContent = SYSTEMS[d.system].tr;
+  els.badge.textContent = systemName(d.system);
   els.badge.style.setProperty('--sys', SYSTEMS[d.system].color);
   if (M.kind === 'real' && state.lastSide) {
-    els.side.textContent = state.lastSide === 'l' ? 'Sol Taraf' : 'Sağ Taraf';
+    els.side.textContent = state.lastSide === 'l' ? tr('Sol Taraf', 'Left side', 'الجانب الأيسر') : tr('Sağ Taraf', 'Right side', 'الجانب الأيمن');
     els.side.classList.remove('hidden');
   } else els.side.classList.add('hidden');
-  els.name.textContent = d.name;
+  els.name.textContent = nameOf(d);
   els.latin.textContent = d.latin || '';
   els.latin.style.display = d.latin ? '' : 'none';
-  if (M.kind === 'real') { els.en.textContent = 'İngilizce: ' + d.en; els.en.classList.remove('hidden'); }
-  else els.en.classList.add('hidden');
-  els.desc.textContent = d.desc || '';
-  els.funcsWrap.style.display = d.funcs && d.funcs.length ? '' : 'none';
+  if (lang === 'tr' || (lang === 'ar' && nameOf(d) !== d.en)) {
+    els.en.textContent = tr('İngilizce: ', 'English: ', 'الاسم الإنجليزي: ') + d.en;
+    els.en.classList.remove('hidden');
+  } else els.en.classList.add('hidden');
+  els.desc.textContent = lang === 'tr' ? (d.desc || '') : (d.englishDef || tr('', 'No source description available.', 'لا يتوفر وصف في المصدر.'));
+  els.desc.dir = lang !== 'tr' && d.englishDef ? 'ltr' : 'auto';
+  const summary = $('#localizedSummary');
+  const summaryText = lang === 'ar' && arabicNames[d.en] && d.infoId ? tourNote('ar', { info: d.infoId }) : '';
+  summary.textContent = summaryText === 'استكشف التركيب المحدد.' ? '' : summaryText;
+  summary.classList.toggle('hidden', !summary.textContent);
+  const notice = $('#translationNotice');
+  notice.textContent = lang === 'ar'
+    ? 'تتوفر أسماء وملخصات عربية لبعض التراكيب فقط؛ تعرض الأسماء الأخرى والأوصاف الأصلية بالإنجليزية.'
+    : lang === 'en' ? 'Source descriptions are shown in English when available.' : '';
+  notice.classList.toggle('hidden', lang === 'tr');
+  els.funcsWrap.style.display = lang === 'tr' && d.funcs && d.funcs.length ? '' : 'none';
   els.funcs.innerHTML = '';
   for (const f of d.funcs || []) { const li = document.createElement('li'); li.textContent = f; els.funcs.appendChild(li); }
-  els.clinicWrap.style.display = d.clinic ? '' : 'none';
+  els.clinicWrap.style.display = lang === 'tr' && d.clinic ? '' : 'none';
   els.clinic.textContent = d.clinic || '';
-  els.factWrap.style.display = d.fact ? '' : 'none';
+  els.factWrap.style.display = lang === 'tr' && d.fact ? '' : 'none';
   els.fact.textContent = d.fact || '';
-  if (d.def) { els.defText.textContent = d.def; els.defWrap.classList.remove('hidden'); }
+  if (lang === 'tr' && d.def) { els.defText.textContent = d.def; els.defWrap.classList.remove('hidden'); }
   else els.defWrap.classList.add('hidden');
   if (d.wiki) { els.wiki.href = d.wiki; els.wiki.classList.remove('hidden'); }
   else els.wiki.classList.add('hidden');
@@ -387,7 +413,7 @@ function select(id, { focus = false, ensure = false, side = null } = {}) {
 function syncIsolateBtn() {
   const on = state.isolate && state.isolate === state.selected;
   els.btnIsolate.classList.toggle('on', !!on);
-  els.btnIsolate.textContent = on ? '◐ İzolasyonu Bırak' : '◐ İzole Et';
+  els.btnIsolate.textContent = on ? tr('◐ İzolasyonu Bırak', '◐ End isolation', '◐ إنهاء العزل') : tr('◐ İzole Et', '◐ Isolate', '◐ عزل');
 }
 $('#infoClose').onclick = () => select(null);
 $('#btnFocus').onclick = () => state.selected && focusStructure(state.selected);
@@ -419,10 +445,10 @@ function buildSystemRows() {
     row.className = 'sys-row'; row.dataset.sys = sys;
     row.innerHTML = `
       <span class="sys-dot" style="background:${SYSTEMS[sys].color};color:${SYSTEMS[sys].color}"></span>
-      <button class="sys-name" style="text-align:left">${SYSTEMS[sys].tr}</button>
-      <span class="sys-count">${count} yapı</span>
-      <button class="sys-solo" title="Yalnızca bu sistemi göster">SOLO</button>
-      <button class="sys-eye" title="Göster / gizle">${EYE}</button>`;
+      <button class="sys-name" style="text-align:left">${systemName(sys)}</button>
+      <span class="sys-count">${count} ${tr('yapı', 'structures', 'تركيب')}</span>
+      <button class="sys-solo" title="${tr('Yalnızca bu sistemi göster', 'Show only this system', 'عرض هذا الجهاز فقط')}">${tr('SOLO', 'SOLO', 'فقط')}</button>
+      <button class="sys-eye" title="${tr('Göster / gizle', 'Show / hide', 'إظهار / إخفاء')}">${EYE}</button>`;
     const toggle = () => toggleSystem(sys);
     row.querySelector('.sys-name').onclick = toggle;
     row.querySelector('.sys-eye').onclick = toggle;
@@ -443,7 +469,7 @@ function updateSystemRows() {
 }
 function markLayerCustom() {
   $$('#layerSeg button').forEach((b) => b.classList.remove('active'));
-  $('#layerName').textContent = 'Özel Karışım';
+  $('#layerName').textContent = tr('Özel Karışım', 'Custom', 'مخصص');
 }
 function postVisibilityChange() { updateSystemRows(); syncIsolateBtn(); }
 function toggleSystem(sys) {
@@ -467,11 +493,7 @@ function buildLayerSeg() {
   seg.innerHTML = '';
   for (const [key2, L] of Object.entries(M.layers)) {
     const b = document.createElement('button');
-    b.dataset.layer = key2; b.textContent = key2 === 'ic' ? 'İç Yapılar' : L.label;
-    if (key2 === 'deri') b.textContent = 'Deri';
-    if (key2 === 'kas') b.textContent = 'Kas';
-    if (key2 === 'iskelet') b.textContent = 'İskelet';
-    if (key2 === 'tumu') b.textContent = 'Tümü';
+    b.dataset.layer = key2; b.textContent = layerName(key2);
     b.onclick = () => applyLayer(key2);
     seg.appendChild(b);
   }
@@ -481,7 +503,7 @@ function applyLayer(name) {
   state.override = null; state.isolate = null;
   for (const s of M.sysOrder) M.systems[s] = L.v[s] ?? 0;
   $$('#layerSeg button').forEach((b) => b.classList.toggle('active', b.dataset.layer === name));
-  $('#layerName').textContent = L.label;
+  $('#layerName').textContent = layerName(name);
   postVisibilityChange();
 }
 
@@ -515,7 +537,7 @@ function isStarred(id) { return stars[M.kind].includes(id); }
 function syncStarUI() {
   const on = state.selected && isStarred(state.selected);
   $('#btnStar').classList.toggle('on', !!on);
-  $('#btnStar').textContent = on ? '★ Yıldızlı' : '☆ Yıldızla';
+  $('#btnStar').textContent = on ? tr('★ Yıldızlı', '★ Favourited', '★ في المفضلة') : tr('☆ Yıldızla', '☆ Favourite', '☆ أضف للمفضلة');
   $('#btnStar').setAttribute('aria-pressed', String(!!on));
   $('#starFilter').classList.toggle('on', starsOnly);
   $('#starFilter').setAttribute('aria-pressed', String(starsOnly));
@@ -528,7 +550,7 @@ $('#btnStar').onclick = () => {
   if (!id) return;
   stars[M.kind] = isStarred(id) ? stars[M.kind].filter((x) => x !== id) : [...stars[M.kind], id];
   try { localStorage.setItem(STAR_KEY, JSON.stringify(stars)); }
-  catch { toast('Yıldızlar bu oturum için kaydedildi; tarayıcı depolamasına yazılamadı.', 'bad'); }
+  catch { toast(tr('Yıldızlar bu oturum için kaydedildi; tarayıcı depolamasına yazılamadı.', 'Favourites could not be saved to browser storage.', 'تعذر حفظ المفضلة في المتصفح.'), 'bad'); }
   buildStructList();
 };
 $('#starFilter').onclick = () => { starsOnly = !starsOnly; syncStarUI(); filterStructList(); };
@@ -545,22 +567,25 @@ function buildStructList() {
   const note = $('#structNote');
   let listedIds = M.ids;
   if (M.kind === 'real') {
-    listedIds = M.ids.filter((id) => M.db[id].tr || isStarred(id));
-    note.textContent = `Atlas içinde toplam ${M.meta.entryCount} benzersiz yapı (${M.meta.meshCount} mesh) var. Burada Türkçe adı/içeriği olan ${listedIds.length} yapı listelenir; geri kalanına üstteki aramayla (Türkçe/İngilizce/Latince) ulaşabilirsiniz.`;
+    listedIds = lang === 'tr' ? M.ids.filter((id) => M.db[id].tr || isStarred(id)) : M.ids;
+    note.textContent = tr(
+      `Atlas içinde toplam ${M.meta.entryCount} benzersiz yapı (${M.meta.meshCount} mesh) var. Burada Türkçe adı/içeriği olan ${listedIds.length} yapı listelenir; geri kalanına üstteki aramayla ulaşabilirsiniz.`,
+      `${M.meta.entryCount} structures in ${M.meta.meshCount} meshes. Search by English, Turkish or Latin name.`,
+      `${M.meta.entryCount} تركيباً في ${M.meta.meshCount} شبكة. تتوفر أسماء عربية لبعض التراكيب؛ الأسماء الأخرى بالإنجليزية. ابحث بالعربية أو الإنجليزية أو اللاتينية.`);
     note.classList.remove('hidden');
   } else note.classList.add('hidden');
   for (const sys of M.sysOrder) {
     const ids = listedIds.filter((id) => M.db[id].system === sys)
-      .sort((a, b) => M.db[a].name.localeCompare(M.db[b].name, 'tr'));
+      .sort((a, b) => nameOf(M.db[a]).localeCompare(nameOf(M.db[b]), lang));
     if (!ids.length) continue;
     const head = document.createElement('div');
-    head.className = 'struct-group'; head.dataset.sys = sys; head.textContent = SYSTEMS[sys].tr;
+    head.className = 'struct-group'; head.dataset.sys = sys; head.textContent = systemName(sys);
     list.appendChild(head);
     for (const id of ids) {
       const d = M.db[id];
       const btn = document.createElement('button');
       btn.className = 'struct-item'; btn.classList.toggle('active', id === state.selected); btn.dataset.id = id; btn.dataset.sys = sys;
-      btn.innerHTML = `<span class="dot" style="background:${SYSTEMS[sys].color}"></span><span>${d.name}</span>${d.infoId ? '<span class="tr-badge">TR+</span>' : ''}${isStarred(id) ? '<span class="star-mark">★</span>' : ''}<span class="lat">${d.latin || ''}</span>`;
+      btn.innerHTML = `<span class="dot" style="background:${SYSTEMS[sys].color}"></span><span dir="auto">${nameOf(d)}</span>${lang === 'tr' && d.infoId ? '<span class="tr-badge">TR+</span>' : ''}${isStarred(id) ? '<span class="star-mark">★</span>' : ''}<span class="lat">${d.latin || ''}</span>`;
       btn.onclick = () => select(id, { ensure: true, focus: true });
       list.appendChild(btn);
     }
@@ -574,7 +599,7 @@ function filterStructList() {
   const visBySys = {};
   $$('.struct-item').forEach((b) => {
     const d = M.db[b.dataset.id];
-    const show = (!starsOnly || isStarred(b.dataset.id)) && (!q || fold(d.name + ' ' + (d.latin || '') + ' ' + (d.en || '')).includes(q));
+    const show = (!starsOnly || isStarred(b.dataset.id)) && (!q || fold(nameOf(d) + ' ' + d.name + ' ' + (d.latin || '') + ' ' + (d.en || '')).includes(q));
     if (show) count++;
     b.style.display = show ? '' : 'none';
     if (show) visBySys[b.dataset.sys] = true;
@@ -591,9 +616,9 @@ $$('.tab').forEach((t) => t.onclick = () => {
 function updateStats() {
   if (M.kind === 'real') {
     $('#stYapı').textContent = M.meta.meshCount;
-    $('#stYapıLabel').textContent = `mesh · ${M.meta.entryCount} yapı`;
+    $('#stYapıLabel').textContent = tr(`mesh · ${M.meta.entryCount} yapı`, `meshes · ${M.meta.entryCount} structures`, `شبكة · ${M.meta.entryCount} تركيب`);
     $('#stUcuncu').textContent = M.ids.filter((id) => M.db[id].tr).length;
-    $('#stUcuncuLabel').textContent = 'Türkçe içerikli yapı';
+    $('#stUcuncuLabel').textContent = tr('Türkçe içerikli yapı', 'Turkish names', 'أسماء تركية');
   } else {
     $('#stYapı').textContent = M.ids.length;
     $('#stYapıLabel').textContent = 'tıklanabilir yapı';
@@ -612,18 +637,18 @@ function runSearch() {
   searchHits = [];
   for (const id of M.ids) {
     const d = M.db[id];
-    const nameF = fold(d.name), enF = d.en ? fold(d.en) : '', latF = d.latin ? fold(d.latin) : '';
+    const nameF = fold(nameOf(d)), enF = fold((d.en || '') + ' ' + d.name), latF = d.latin ? fold(d.latin) : '';
     let score = 9;
     if (nameF.startsWith(q) || enF.startsWith(q)) score = 0;
     else if (nameF.includes(q) || enF.includes(q)) score = 1;
     else if (latF.includes(q)) score = 2;
     if (score < 9) searchHits.push({ id, d, score, trRank: d.tr ? 0 : 1 });
   }
-  searchHits.sort((a, b) => a.score - b.score || a.trRank - b.trRank || a.d.name.localeCompare(b.d.name, 'tr'));
+  searchHits.sort((a, b) => a.score - b.score || a.trRank - b.trRank || nameOf(a.d).localeCompare(nameOf(b.d), lang));
   searchHits = searchHits.slice(0, 9);
   resultsEl.innerHTML = searchHits.length
-    ? searchHits.map(({ id, d }) => `<button data-id="${id}"><span class="dot" style="background:${SYSTEMS[d.system].color}"></span>${d.name}<span class="lat">${M.kind === 'real' && d.en !== d.name ? d.en : (d.latin || '')}</span></button>`).join('')
-    : '<div class="empty">Sonuç yok — başka bir ad deneyin (Türkçe/İngilizce/Latince olabilir).</div>';
+    ? searchHits.map(({ id, d }) => `<button data-id="${id}"><span class="dot" style="background:${SYSTEMS[d.system].color}"></span>${nameOf(d)}<span class="lat">${d.latin || ''}</span></button>`).join('')
+    : `<div class="empty">${tr('Sonuç yok — başka bir ad deneyin.', 'No results — try another name.', 'لا توجد نتائج، جرّب اسماً آخر.')}</div>`;
   resultsEl.classList.remove('hidden');
   resultsEl.querySelectorAll('button').forEach((b) => b.onclick = () => {
     select(b.dataset.id, { ensure: true, focus: true });
@@ -664,7 +689,7 @@ function setFasciaVisibility(show) {
   const button = $('#fasciaToggle');
   button.classList.toggle('on', show);
   button.setAttribute('aria-pressed', String(show));
-  button.textContent = `Fasya katmanı: ${show ? 'Görünür' : 'Gizli'}`;
+  button.textContent = show ? tr('Fasya katmanı: Görünür', 'Fascia: visible', 'اللفافة: ظاهرة') : tr('Fasya katmanı: Gizli', 'Fascia: hidden', 'اللفافة: مخفية');
   if (M.kind === 'real') {
     for (const [id, st] of M.structures) if (st.parts.some((p) => p.isFascia)) applyEntryFade(id, M.fade.get(id) ?? 0);
   }
@@ -700,8 +725,15 @@ $('#tgXray').onclick = (e) => {
   state.xray = !state.xray;
   e.currentTarget.classList.toggle('active', state.xray);
   refreshXray(); refreshHighlights();
-  toast(state.xray ? '🩻 X-Işını modu açık — seçili yapı gerçek rengiyle parlar' : 'X-Işını modu kapalı');
+  toast(state.xray ? tr('🩻 X-Işını modu açık', '🩻 X-ray mode on', '🩻 وضع الأشعة مفعل') : tr('X-Işını modu kapalı', 'X-ray mode off', 'وضع الأشعة متوقف'));
 };
+function syncPan() {
+  configurePanControls(controls, state.pan);
+  const b = $('#tgPan'); b.classList.toggle('active', state.pan); b.setAttribute('aria-pressed', String(state.pan));
+  b.textContent = tr('✥ Kaydır', '✥ Pan', '✥ تحريك');
+  b.title = tr('Kaydırma modunu aç/kapat', 'Toggle pan mode', 'تفعيل أو إيقاف التحريك');
+}
+$('#tgPan').onclick = () => { state.pan = !state.pan; syncPan(); };
 $('#tgSpin').onclick = (e) => {
   state.spin = !state.spin; controls.autoRotate = state.spin;
   e.currentTarget.classList.toggle('active', state.spin);
@@ -723,6 +755,7 @@ function resetAll() {
   for (const [input] of clipControls) input.value = 100;
   updateClips();
   setFasciaVisibility(false);
+  state.pan = false; syncPan();
   applyLayer(M.defaultLayer);
   animateCam(HOME_POS, HOME_TGT, 1.2);
 }
@@ -732,7 +765,7 @@ $('#btnShot').onclick = () => {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob); a.download = 'tugrul-atlas-anatomi.png'; a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 3000);
-    toast('📸 Görüntü kaydedildi — arkadaşına gönder bakalım kim gülecek 😏', 'ok');
+    toast(tr('📸 Görüntü kaydedildi.', '📸 Screenshot saved.', '📸 تم حفظ لقطة الشاشة.'), 'ok');
   });
   renderer.setClearColor(0x000000, 0);
 };
@@ -751,16 +784,24 @@ function toast(msg, kind = '') {
   toastTimer = setTimeout(() => t.classList.add('hidden'), 3600);
 }
 function randomFact() {
+  if (lang !== 'tr') {
+    const facts = [
+      ['The heart has four chambers.', 'يتكون القلب من أربع حجرات.'],
+      ['The diaphragm is a major muscle of breathing.', 'الحجاب الحاجز عضلة رئيسية في التنفس.'],
+      ['The femur is the longest bone in the human body.', 'عظم الفخذ أطول عظم في جسم الإنسان.'],
+      ['The kidneys filter blood and produce urine.', 'ترشح الكليتان الدم وتنتجان البول.'],
+    ];
+    const fact = facts[Math.floor(Math.random() * facts.length)];
+    $('#factText').textContent = fact[lang === 'ar' ? 1 : 0];
+    $('#factSrc').textContent = ''; $('#factSrc').onclick = null; return;
+  }
   const ids = Object.keys(INFO);
   const id = ids[Math.floor(Math.random() * ids.length)];
   $('#factText').textContent = INFO[id].fact;
   const src = $('#factSrc');
   src.textContent = `— ${INFO[id].name} (${INFO[id].latin}) · karta git →`;
   src.style.cursor = 'pointer';
-  src.onclick = () => {
-    const target = findEntryByInfo(id);
-    if (target) select(target, { ensure: true, focus: true });
-  };
+  src.onclick = () => { const target = findEntryByInfo(id); if (target) select(target, { ensure: true, focus: true }); };
 }
 $('#btnFact').onclick = randomFact;
 randomFact();
@@ -785,11 +826,11 @@ function castAt(clientX, clientY) {
 }
 renderer.domElement.addEventListener('pointermove', (e) => { pointerClient = { x: e.clientX, y: e.clientY }; needPick = true; });
 renderer.domElement.addEventListener('pointerdown', (e) => {
-  downInfo = { x: e.clientX, y: e.clientY, t: performance.now() };
+  downInfo = e.isPrimary && e.button === 0 && !state.pan ? { x: e.clientX, y: e.clientY, t: performance.now(), id: e.pointerId } : null;
   if (state.spin) { state.spin = false; controls.autoRotate = false; $('#tgSpin').classList.remove('active'); }
 });
 renderer.domElement.addEventListener('pointerup', (e) => {
-  if (!downInfo) return;
+  if (!downInfo || !e.isPrimary || e.pointerId !== downInfo.id || e.button !== 0 || state.pan) { downInfo = null; return; }
   const moved = Math.hypot(e.clientX - downInfo.x, e.clientY - downInfo.y);
   const dt = performance.now() - downInfo.t;
   downInfo = null;
@@ -804,7 +845,7 @@ renderer.domElement.addEventListener('dblclick', (e) => {
 });
 document.addEventListener('keydown', (e) => {
   const tag = document.activeElement?.tagName;
-  if (tag === 'INPUT') return;
+  if (['INPUT', 'TEXTAREA', 'SELECT'].includes(tag)) return;
   if (e.key === '/') { e.preventDefault(); searchEl.focus(); }
   else if (e.key === 'Escape') { select(null); hideModals(); }
   else if (e.key.toLowerCase() === 'r') animateCam(HOME_POS, HOME_TGT, 1.1);
@@ -839,7 +880,7 @@ function buildLabels() {
     const d = M.db[sp.id];
     const div = document.createElement('div');
     div.className = 'label3d';
-    div.innerHTML = `${d.name}<small>${d.latin || ''}</small>`;
+    div.innerHTML = `${nameOf(d)}<small>${d.latin || ''}</small>`;
     div.style.display = 'none';
     labelsWrap.appendChild(div);
     const line = document.createElementNS(SVGNS, 'polyline');
@@ -888,7 +929,7 @@ function buildTourList() {
   for (const t of TOURS) {
     const b = document.createElement('button');
     b.className = 'tour-item';
-    b.innerHTML = `<span class="ti">${t.icon}</span><span class="tt"><b>${t.title}</b><small>${t.desc}</small></span><span class="tc">${t.steps.length} adım</span>`;
+    b.innerHTML = `<span class="ti">${t.icon}</span><span class="tt"><b>${tourTitle(lang, t)}</b><small>${tourDesc(lang, t)}</small></span><span class="tc">${t.steps.length} ${tr('adım', 'steps', 'خطوات')}</span>`;
     b.onclick = () => startTour(t.id);
     list.appendChild(b);
   }
@@ -912,7 +953,7 @@ function startTour(id) {
   updateClips();
   $('#tourPanel').classList.remove('hidden');
   applyTourStep();
-  toast(`🎓 "${t.title}" turu başladı — ←/→ tuşlarıyla da gezinebilirsin.`);
+  toast(tr(`🎓 "${t.title}" turu başladı — ←/→ tuşlarıyla da gezinebilirsin.`, `🎓 ${tourTitle(lang, t)} started.`, `🎓 بدأت جولة ${tourTitle(lang, t)}.`));
 }
 function applyTourStep() {
   const t = tourState.active;
@@ -926,13 +967,20 @@ function applyTourStep() {
     state.isolate = id; tourState.isolatedId = id; syncIsolateBtn();
   } else select(null);
   $('#tourIcon').textContent = t.icon;
-  $('#tourTitle').textContent = t.title;
-  $('#tourCounter').textContent = `Adım ${tourState.idx + 1}/${t.steps.length}`;
-  $('#tourStepTitle').textContent = step.title;
-  $('#tourText').textContent = step.text + (!id ? ' (Bu yapı atlas verisinde bulunamadı.)' : '');
+  renderTourText();
   $('#tourDots').innerHTML = t.steps.map((_, i) => `<i class="${i === tourState.idx ? 'on' : ''}"></i>`).join('');
   $('#tourPrev').disabled = tourState.idx === 0;
-  $('#tourNext').textContent = tourState.idx === t.steps.length - 1 ? 'Bitir ✓' : 'Sonraki →';
+  $('#tourNext').textContent = tourState.idx === t.steps.length - 1 ? tr('Bitir ✓', 'Finish ✓', 'إنهاء ✓') : tr('Sonraki →', 'Next →', '← التالي');
+}
+function renderTourText() {
+  const t = tourState.active; if (!t) return;
+  const step = t.steps[tourState.idx], id = tourStepId(step);
+  $('#tourTitle').textContent = tourTitle(lang, t);
+  $('#tourCounter').textContent = tr(`Adım ${tourState.idx + 1}/${t.steps.length}`, `Step ${tourState.idx + 1}/${t.steps.length}`, `الخطوة ${tourState.idx + 1}/${t.steps.length}`);
+  $('#tourStepTitle').textContent = lang === 'tr' ? step.title : (id ? nameOf(M.db[id]) : step.real || step.info);
+  $('#tourText').textContent = lang === 'tr' ? step.text : tourNote(lang, step);
+  if (!id) $('#tourText').textContent += tr(' (Bu yapı atlas verisinde bulunamadı.)', ' (Structure not found in the atlas.)', ' (التركيب غير موجود في الأطلس.)');
+  $('#tourNext').textContent = tourState.idx === t.steps.length - 1 ? tr('Bitir ✓', 'Finish ✓', 'إنهاء ✓') : tr('Sonraki →', 'Next →', '← التالي');
 }
 function stepTour(dir) {
   const t = tourState.active;
@@ -941,7 +989,7 @@ function stepTour(dir) {
   if (next < 0) return;
   if (next >= t.steps.length) {
     exitTour();
-    toast('🏁 Tur tamamlandı! Öğrendiklerini pekiştirmek için 🎯 Quiz modunu dene.');
+    toast(tr('🏁 Tur tamamlandı!', '🏁 Tour complete!', '🏁 اكتملت الجولة!'));
     return;
   }
   tourState.idx = next;
@@ -981,7 +1029,6 @@ $$('.quiz-cats button').forEach((b) => b.onclick = () => startQuiz(b.dataset.cat
 function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 function entryCategory(id) {
   const d = M.db[id];
-  if (M.kind === 'real' && d.infoId) return INFO[d.infoId].system;
   if (d.system === 'joint') return 'bone';
   if (d.system === 'lymph') return 'organ';
   return d.system;
@@ -991,10 +1038,11 @@ function startQuiz(cat) {
   let pool = M.ids.filter((id) => {
     const c = entryCategory(id);
     if (cat === 'stars') return isStarred(id);
-    if (M.kind === 'real' && !M.db[id].tr) return false;
+    if (lang === 'tr' && !M.db[id].tr) return false;
+    if (lang === 'ar' && !arabicNames[M.db[id].en]) return false;
     return cat === 'organ' ? (c === 'organ' || c === 'vessel') : c === cat;
   });
-  if (!pool.length) { toast(cat === 'stars' ? 'Önce bu modelde bir yapıyı yıldızla.' : 'Bu kategoride sınav sorusu bulunamadı.', 'bad'); $('#quizSetup').classList.remove('hidden'); return; }
+  if (!pool.length) { toast(cat === 'stars' ? tr('Önce bir yapıyı yıldızla.', 'Favourite a structure first.', 'أضف تركيباً إلى المفضلة أولاً.') : tr('Bu kategoride soru bulunamadı.', 'No questions found in this category.', 'لا توجد أسئلة في هذه الفئة.'), 'bad'); $('#quizSetup').classList.remove('hidden'); return; }
   if (tourState.active) exitTour();
   for (const [input] of clipControls) input.value = 100;
   updateClips();
@@ -1022,7 +1070,7 @@ function startQuiz(cat) {
     const bar = $('#quizTimerBar');
     bar.style.width = clamp(quiz.timeLeft / 20 * 100, 0, 100) + '%';
     bar.classList.toggle('low', quiz.timeLeft <= 5);
-    if (quiz.timeLeft <= 0) revealAnswer('⏰ Süre doldu!');
+    if (quiz.timeLeft <= 0) revealAnswer(tr('⏰ Süre doldu!', '⏰ Time is up!', '⏰ انتهى الوقت!'));
   }, 100);
 }
 function setQuestion() {
@@ -1034,12 +1082,17 @@ function setQuestion() {
     setSystems({ [M.db[id].system]: 1 });
   }
   quiz.attempts = 3; quiz.timeLeft = 20; quiz.locked = false;
-  $('#quizProgress').textContent = `Soru ${quiz.idx + 1}/${quiz.qs.length}`;
-  $('#quizTarget').innerHTML = `${M.db[id].name}<small>${M.db[id].latin || ''}</small>`;
-  $('#quizScore').textContent = `${quiz.score} puan`;
-  $('#quizStreak').textContent = quiz.streak >= 2 ? `🔥 ${quiz.streak} seri` : '';
+  renderQuizText();
   const bar = $('#quizTimerBar'); bar.style.width = '100%'; bar.classList.remove('low');
   const m = $('#quizMsg'); m.textContent = ''; m.className = '';
+}
+function renderQuizText() {
+  if (!quiz.active || !quiz.qs[quiz.idx]) return;
+  const d = M.db[quiz.qs[quiz.idx]];
+  $('#quizProgress').textContent = tr(`Soru ${quiz.idx + 1}/${quiz.qs.length}`, `Question ${quiz.idx + 1}/${quiz.qs.length}`, `السؤال ${quiz.idx + 1}/${quiz.qs.length}`);
+  $('#quizTarget').innerHTML = `${nameOf(d)}<small>${d.latin || ''}</small>`;
+  $('#quizScore').textContent = tr(`${quiz.score} puan`, `${quiz.score} points`, `${quiz.score} نقطة`);
+  $('#quizStreak').textContent = quiz.streak >= 2 ? tr(`🔥 ${quiz.streak} seri`, `🔥 ${quiz.streak} streak`, `🔥 ${quiz.streak} متتالية`) : '';
 }
 const PRAISE = ['Mükemmel!', 'Hekim gözü!', 'Şak diye buldunuz!', 'Netter görse gurur duyardı!', 'Tıp birincisi hareketi!'];
 function quizClick(id) {
@@ -1054,16 +1107,16 @@ function quizClick(id) {
     quiz.score += gain;
     flash(id, 0x1d9e63, 1300, 1.6);
     m.className = 'ok';
-    m.textContent = `✅ ${PRAISE[Math.floor(Math.random() * PRAISE.length)]} +${gain} puan${mult > 1 ? ` (seri ×${mult.toFixed(2).replace(/0$/, '')})` : ''}`;
-    $('#quizScore').textContent = `${quiz.score} puan`;
+    m.textContent = tr(`✅ ${PRAISE[Math.floor(Math.random() * PRAISE.length)]} +${gain} puan`, `✅ Correct! +${gain} points`, `✅ إجابة صحيحة! +${gain} نقطة`);
+    renderQuizText();
     setTimeout(nextQuestion, 1400);
   } else {
     quiz.attempts--; quiz.streak = 0;
     flash(id, 0xb01e34, 650, 1.5);
     if (quiz.attempts > 0) {
       m.className = 'bad';
-      m.textContent = `❌ O yapı: ${M.db[id].name}. ${quiz.attempts} hakkın kaldı.`;
-    } else revealAnswer('❌ Hakların doldu.');
+      m.textContent = tr(`❌ O yapı: ${nameOf(M.db[id])}. ${quiz.attempts} hakkın kaldı.`, `❌ That is ${nameOf(M.db[id])}. ${quiz.attempts} attempts left.`, `❌ هذا ${nameOf(M.db[id])}. المحاولات المتبقية: ${quiz.attempts}.`);
+    } else revealAnswer(tr('❌ Hakların doldu.', '❌ No attempts left.', '❌ انتهت المحاولات.'));
   }
 }
 function revealAnswer(prefix) {
@@ -1074,7 +1127,7 @@ function revealAnswer(prefix) {
   select(target);
   const m = $('#quizMsg');
   m.className = 'bad';
-  m.textContent = `${prefix} Doğru yapı ışıldıyor: ${M.db[target].name}. Karta göz at!`;
+  m.textContent = tr(`${prefix} Doğru yapı ışıldıyor: ${nameOf(M.db[target])}.`, `${prefix} Correct structure: ${nameOf(M.db[target])}.`, `${prefix} التركيب الصحيح: ${nameOf(M.db[target])}.`);
   setTimeout(nextQuestion, 2300);
 }
 function nextQuestion() {
@@ -1090,25 +1143,25 @@ function endQuiz() {
 function finishQuiz() {
   endQuiz();
   const total = quiz.qs.length, ratio = quiz.correct / total;
-  const [emoji, title] = ratio >= .9 ? ['🏆', 'Anatomi Profesörü']
-    : ratio >= .7 ? ['🩺', 'Uzman Hekim Adayı']
-    : ratio >= .5 ? ['📚', 'Çalışkan Tıp Öğrencisi']
-    : ratio >= .3 ? ['🔬', 'Meraklı Araştırmacı']
-    : ['🌱', 'Anatomi Yolculuğu Başlıyor'];
+  const [emoji, title] = ratio >= .9 ? ['🏆', tr('Anatomi Profesörü', 'Anatomy Professor', 'أستاذ التشريح')]
+    : ratio >= .7 ? ['🩺', tr('Uzman Hekim Adayı', 'Future Specialist', 'طبيب متخصص مستقبلي')]
+    : ratio >= .5 ? ['📚', tr('Çalışkan Tıp Öğrencisi', 'Diligent Student', 'طالب مجتهد')]
+    : ratio >= .3 ? ['🔬', tr('Meraklı Araştırmacı', 'Curious Explorer', 'باحث فضولي')]
+    : ['🌱', tr('Anatomi Yolculuğu Başlıyor', 'Anatomy Journey Begins', 'بداية رحلة التشريح')];
   $('#resultEmoji').textContent = emoji;
   $('#resultTitle').textContent = title;
   $('#resultScore').textContent = quiz.score;
   $('#resultDetail').textContent =
-    `${total} soruda ${quiz.correct} doğru · En uzun seri: ${quiz.best} · Kategori: ${CAT_LABEL[quiz.cat]}${M.kind === 'real' ? ' · Gerçek Atlas' : ''}`;
+    tr(`${total} soruda ${quiz.correct} doğru · En uzun seri: ${quiz.best} · Kategori: ${CAT_LABEL[quiz.cat]}`, `${quiz.correct}/${total} correct · Best streak: ${quiz.best}`, `${quiz.correct}/${total} إجابات صحيحة · أطول سلسلة: ${quiz.best}`);
   $('#quizResult').classList.remove('hidden');
   quiz.finalTitle = title;
 }
-$('#quizExit').onclick = () => { endQuiz(); toast('Sınavdan çıktınız — keşfe devam!'); };
-$('#quizSkip').onclick = () => { if (!quiz.locked) revealAnswer('⏭ Pas geçtiniz.'); };
+$('#quizExit').onclick = () => { endQuiz(); toast(tr('Sınavdan çıktınız — keşfe devam!', 'Quiz exited — keep exploring!', 'خرجت من الاختبار، تابع الاستكشاف!')); };
+$('#quizSkip').onclick = () => { if (!quiz.locked) revealAnswer(tr('⏭ Pas geçtiniz.', '⏭ Skipped.', '⏭ تم التخطي.')); };
 $('#btnAgain').onclick = () => { hideModals(); $('#quizSetup').classList.remove('hidden'); };
 $('#btnChallenge').onclick = async () => {
-  const text = `🫀 TUĞRUL ATLAS Anatomi Sınavı'nda ${quiz.score} puan yaptım! (${quiz.correct}/${quiz.qs.length} doğru — unvanım: ${quiz.finalTitle || 'Hekim Adayı'})\nMacBook'undaki o uygulamayla beni geçebilir misin bakalım? 😏`;
-  try { await navigator.clipboard.writeText(text); toast('📋 Meydan okuma kopyalandı! Arkadaşına gönder, cevabını bekle 😎', 'ok'); }
+  const text = tr(`🫀 TUĞRUL ATLAS: ${quiz.score} puan (${quiz.correct}/${quiz.qs.length} doğru)`, `🫀 TUĞRUL ATLAS: ${quiz.score} points (${quiz.correct}/${quiz.qs.length} correct)`, `🫀 أطلس طغرل: ${quiz.score} نقطة (${quiz.correct}/${quiz.qs.length} إجابات صحيحة)`);
+  try { await navigator.clipboard.writeText(text); toast(tr('📋 Sonuç kopyalandı!', '📋 Result copied!', '📋 تم نسخ النتيجة!'), 'ok'); }
   catch { toast(text); }
 };
 
@@ -1116,7 +1169,7 @@ $('#btnChallenge').onclick = async () => {
 function updateCredit() {
   const c = $('#modelCredit');
   c.classList.remove('hidden');
-  c.innerHTML = 'Bir <b>Muhammet TUĞRUL</b> projesi<br>Kaynaklar ve lisanslar ⓘ';
+  c.innerHTML = tr('Bir <b>Muhammet TUĞRUL</b> projesi<br>Kaynaklar ve lisanslar ⓘ', 'A project by <b>Muhammet TUĞRUL</b><br>Sources and licences ⓘ', 'مشروع <b>Muhammet TUĞRUL</b><br>المصادر والتراخيص ⓘ');
 }
 $('#modelCredit').onclick = () => $('#creditsModal').classList.remove('hidden');
 function rebuildModelUI() {
@@ -1130,7 +1183,7 @@ function rebuildModelUI() {
 /* ================= GÖRÜNÜM BAĞLANTISI ================= */
 function snapshotView() {
   if (state.override && state.override.size > 200) {
-    toast('Bu hazır görünüm çok fazla yapı içeriyor. Paylaşmak için bir katman seçin.', 'bad');
+    toast(tr('Bu görünüm çok fazla yapı içeriyor. Paylaşmak için bir katman seçin.', 'This view contains too many structures. Select a layer to share.', 'يحتوي هذا العرض على تراكيب كثيرة. اختر طبقة للمشاركة.'), 'bad');
     return null;
   }
   return { v: 1, mode: M.kind, theme: visualTheme, camera: camera.position.toArray(), target: controls.target.toArray(),
@@ -1141,8 +1194,8 @@ function snapshotView() {
 $('#btnShare').onclick = async () => {
   const view = snapshotView(); if (!view) return;
   const url = new URL(location.href); url.hash = 'v=' + encodeURIComponent(JSON.stringify(view));
-  try { await navigator.clipboard.writeText(url.href); toast('🔗 Görünüm bağlantısı kopyalandı.', 'ok'); }
-  catch { window.prompt('Bağlantıyı kopyala:', url.href); }
+  try { await navigator.clipboard.writeText(url.href); toast(tr('🔗 Görünüm bağlantısı kopyalandı.', '🔗 View link copied.', '🔗 تم نسخ رابط المنظور.'), 'ok'); }
+  catch { window.prompt(tr('Bağlantıyı kopyala:', 'Copy link:', 'انسخ الرابط:'), url.href); }
 };
 function restoreView() {
   if (!location.hash.startsWith('#v=')) return false;
@@ -1150,7 +1203,7 @@ function restoreView() {
     const data = JSON.parse(decodeURIComponent(location.hash.slice(3)));
     const vec = (v) => Array.isArray(v) && v.length === 3 && v.every((x) => typeof x === 'number' && Number.isFinite(x) && Math.abs(x) <= 100);
     if (data.v !== 1 || !['real', 'proc'].includes(data.mode) || !vec(data.camera) || !vec(data.target)) throw Error('Geçersiz bağlantı');
-    if (data.mode === 'proc') { toast('Bu bağlantıdaki model artık kullanılmıyor.', 'bad'); return false; }
+    if (data.mode === 'proc') { toast(tr('Bu bağlantıdaki model artık kullanılmıyor.', 'The model in this link is no longer available.', 'النموذج في هذا الرابط لم يعد متاحاً.'), 'bad'); return false; }
     if (!RM) return false;
     setFasciaVisibility(!!data.fascia);
     if (VISUAL_THEMES[data.theme]) applyVisualTheme(data.theme);
@@ -1173,9 +1226,9 @@ function restoreView() {
     if (!!data.labels !== state.labels) $('#tgLabels').click();
     state.spin = false; controls.autoRotate = false; $('#tgSpin').classList.remove('active');
     camAnim = null; camera.position.fromArray(data.camera); controls.target.fromArray(data.target); controls.update();
-    toast('🔗 Paylaşılan görünüm açıldı.', 'ok');
+    toast(tr('🔗 Paylaşılan görünüm açıldı.', '🔗 Shared view opened.', '🔗 تم فتح المنظور المشترك.'), 'ok');
     return true;
-  } catch (err) { console.warn('Görünüm bağlantısı okunamadı:', err); toast('Görünüm bağlantısı geçersiz.', 'bad'); return false; }
+  } catch (err) { console.warn('Görünüm bağlantısı okunamadı:', err); toast(tr('Görünüm bağlantısı geçersiz.', 'Invalid view link.', 'رابط المنظور غير صالح.'), 'bad'); return false; }
 }
 
 /* ================= ANA DÖNGÜ ================= */
@@ -1197,9 +1250,6 @@ function tick() {
     controls.target.lerpVectors(camAnim.fromTgt, camAnim.toTgt, k);
     if (camAnim.t >= 1) { camAnim = null; if (state.spin) controls.autoRotate = true; }
   }
-  controls.target.x = clamp(controls.target.x, -4, 4);
-  controls.target.y = clamp(controls.target.y, .2, 10.2);
-  controls.target.z = clamp(controls.target.z, -4, 4);
   controls.update();
 
   /* yumuşak görünürlük geçişleri */
@@ -1230,7 +1280,7 @@ function tick() {
     if (id !== state.hovered) { state.hovered = id; refreshHighlights(); }
     if (id) {
       const d = M.db[id];
-      tooltip.innerHTML = `${d.name}<small>${d.latin || (d.en || '')}${quiz.active ? '' : ' · tıklayın'}</small>`;
+      tooltip.innerHTML = `${nameOf(d)}<small>${d.latin || (d.en || '')}${quiz.active ? '' : tr(' · tıklayın', ' · click', ' · انقر')}</small>`;
       tooltip.style.opacity = 1;
       tooltip.style.left = (pointerClient.x + 16) + 'px';
       tooltip.style.top = (pointerClient.y + 14) + 'px';
@@ -1261,16 +1311,16 @@ addEventListener('resize', () => {
   const fillEl = $('#introFill'), msg = $('#introMsg');
   const t0 = performance.now();
   const finishIntro = () => {
-    fillEl.style.width = '100%'; msg.textContent = 'Hazır!';
+    fillEl.style.width = '100%'; msg.textContent = tr('Hazır!', 'Ready!', 'جاهز!');
     const wait = Math.max(0, 950 - (performance.now() - t0));
     setTimeout(() => {
       $('#intro').classList.add('done');
       if (!restoreView()) animateCam(HOME_POS, HOME_TGT, 1.9);
-      setTimeout(() => toast(`👋 HOŞ GELDİNİZ! TUĞRUL ATLAS içinde ${M.meta.entryCount} yapı sizi bekliyor. Bir kasa tıklayın!`), 1300);
+      setTimeout(() => toast(tr(`👋 Hoş geldiniz! ${M.meta.entryCount} yapıyı keşfedin.`, `👋 Welcome! Explore ${M.meta.entryCount} structures.`, `👋 أهلاً بك! استكشف ${M.meta.entryCount} تركيباً.`)), 1300);
     }, wait);
   };
   loadRealBody({
-    onProgress: (frac, label) => { fillEl.style.width = Math.round(frac * 100) + '%'; if (label) msg.textContent = label; },
+    onProgress: (frac, label) => { fillEl.style.width = Math.round(frac * 100) + '%'; if (label) msg.textContent = lang === 'tr' ? label : tr('', 'Loading anatomy atlas…', 'جارٍ تحميل أطلس التشريح…'); },
   }).then((built) => {
     RM = wrapModel('real', built, {
       db: built.db, ids: built.ids, sysOrder: REAL_SYS_ORDER, layers: REAL_LAYERS, defaultLayer: 'kas',
@@ -1287,16 +1337,44 @@ addEventListener('resize', () => {
     finishIntro();
   }).catch((err) => {
     console.error('Gerçek atlas yüklenemedi:', err);
-    msg.textContent = 'Atlas yüklenemedi. İnternet bağlantınızı kontrol edip tekrar deneyin.';
+    msg.textContent = tr('Atlas yüklenemedi. İnternet bağlantınızı kontrol edip tekrar deneyin.', 'The atlas could not load. Check your connection and retry.', 'تعذر تحميل الأطلس. تحقق من الاتصال وحاول مجدداً.');
     $('#introRetry').classList.remove('hidden');
   });
 }
 $('#introRetry').onclick = () => location.reload();
+function setLanguage(value) {
+  if (!['tr', 'en', 'ar'].includes(value)) return;
+  const activeLayer = $('#layerSeg button.active')?.dataset.layer;
+  lang = value;
+  try { localStorage.setItem('tugrul-language', lang); } catch {}
+  document.documentElement.lang = lang;
+  document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+  document.title = tr('TUĞRUL ATLAS — İnteraktif Anatomi Atlası', 'TUĞRUL ATLAS — Interactive Anatomy Atlas', 'أطلس طغرل — أطلس التشريح التفاعلي');
+  $('#language').value = lang;
+  translateStatic(lang);
+  document.querySelector('.credit-block .lic').textContent = tr(originalLicenceNotice,
+    '“BodyParts3D — The Database Center for Life Science — CC BY-SA 2.1 Japan” · “Z-Anatomy — the open source atlas of anatomy — CC BY-SA 4.0”. “Brainder” and “White matter” — University of Washington; “Cranial Nerves and Foramina” — University of Dundee, CAHID (CC BY 4.0); “Anatomy of the Inner Ear” — University of Dundee School of Medicine (CC BY-NC-SA 4.0); “Kidney” — lissiecowley (CC BY-NC 4.0). Inner ear and kidney components carry non-commercial restrictions. The source notice does not specify licences for Brainder and White matter; verify their rights separately. Definitions are mostly from Wikipedia (CC BY-SA 3.0 / GFDL). Check each component’s licence and compatibility; see ATTRIBUTION.md and the bundled licence files.',
+    '“BodyParts3D — The Database Center for Life Science — CC BY-SA 2.1 Japan” · “Z-Anatomy — the open source atlas of anatomy — CC BY-SA 4.0”. “Brainder” و “White matter” — University of Washington؛ “Cranial Nerves and Foramina” — University of Dundee, CAHID (CC BY 4.0)؛ “Anatomy of the Inner Ear” — University of Dundee School of Medicine (CC BY-NC-SA 4.0)؛ “Kidney” — lissiecowley (CC BY-NC 4.0). تحمل مكونات الأذن الداخلية والكلية قيود الاستخدام غير التجاري. لم يحدد المصدر تراخيص Brainder و White matter؛ يجب التحقق من حقوقهما. معظم التعريفات من ويكيبيديا (CC BY-SA 3.0 / GFDL). راجع تراخيص المكونات وتوافقها في ATTRIBUTION.md وملفات التراخيص المرفقة.');
+  $('#panHint').textContent = tr('Kaydır: sağ tuşla sürükle veya Kaydır modunu seç · dokunmatik: iki parmakla sürükle', 'Pan: drag with the right mouse button or select Pan · touch: drag with two fingers', 'للتحريك: اسحب بزر الفأرة الأيمن أو اختر تحريك · اللمس: اسحب بإصبعين');
+  rebuildModelUI(); buildTourList();
+  const languageNotice = $('#languageNotice');
+  languageNotice.textContent = tr('', 'Tours show brief English summaries; source descriptions are in English.', 'الجولات تقدم ملخصات عربية. تتوفر أسماء عربية لبعض التراكيب فقط؛ بقية الأسماء والأوصاف بالإنجليزية.');
+  languageNotice.classList.toggle('hidden', lang === 'tr');
+  if (activeLayer) { const button = $(`#layerSeg button[data-layer="${activeLayer}"]`); if (button) button.classList.add('active'); $('#layerName').textContent = layerName(activeLayer); }
+  else markLayerCustom();
+  setFasciaVisibility(state.showFascia); syncPan(); syncIsolateBtn(); syncStarUI();
+  if (state.selected) fillInfo(state.selected);
+  if (tourState.active) renderTourText();
+  renderQuizText(); randomFact();
+  if (searchEl.value.trim()) runSearch();
+}
+$('#language').addEventListener('change', (e) => setLanguage(e.target.value));
+setLanguage(lang);
 
 // Çevrimdışı kurulum yalnızca üretim derlemesinde etkin.
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   const firstInstall = !navigator.serviceWorker.controller;
   navigator.serviceWorker.register(import.meta.env.BASE_URL + 'sw.js').then(() => navigator.serviceWorker.ready).then(() => {
-    if (firstInstall) toast('📱 Atlas çevrimdışı kullanım için hazır.', 'ok');
+    if (firstInstall) toast(tr('📱 Atlas çevrimdışı kullanım için hazır.', '📱 Atlas ready for offline use.', '📱 الأطلس جاهز للاستخدام دون اتصال.'), 'ok');
   }).catch((err) => console.warn('Çevrimdışı kurulum başarısız:', err));
 }

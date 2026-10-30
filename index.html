@@ -48,6 +48,7 @@
       <div id="searchResults" class="hidden"></div>
     </div>
 
+    <label class="language-control"><span class="sr-only">Language / اللغة / Dil</span><select id="language" aria-label="Language / اللغة / Dil"><option value="tr">Türkçe</option><option value="en">English</option><option value="ar">العربية</option></select></label>
     <div class="top-actions">
       <button id="btnCredits" class="icon-btn" title="Kaynaklar ve lisanslar">
         <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 16v-4M12 8h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
@@ -68,6 +69,7 @@
   <!-- SOL PANEL -->
   <aside id="leftPanel" class="panel">
     <div class="atlas-panel-title"><span class="panel-eyebrow">KEŞİF ALANI <i>01 / 07</i></span><strong>İnsan Anatomisi</strong><small>KATMAN KATMAN KEŞFET</small></div>
+    <p id="languageNotice" class="language-notice hidden"></p>
     <div class="tabs">
       <button class="tab active" data-tab="systems">Sistemler</button>
       <button class="tab" data-tab="structures">Yapılar <span id="structCount" class="pill"></span></button>
@@ -143,6 +145,7 @@
         <li><b>Sürükle</b> döndür · <b>Tekerlek</b> yakınlaştır</li>
         <li><b>Tıkla</b> yapı seç · <b>Çift tık</b> odaklan</li>
         <li><b>1–7</b> sistemleri aç/kapat · <b>R</b> kamerayı sıfırla</li>
+        <li id="panHint">Kaydır: sağ tuşla sürükle veya Kaydır modunu seç · dokunmatik: iki parmakla sürükle</li>
       </ul>
       <div class="fact-card">
         <div class="fact-head">💡 BİLİYOR MUYDUNUZ?
@@ -167,6 +170,8 @@
       <h2 id="infoName"></h2>
       <p id="infoLatin" class="latin"></p>
       <p id="infoEn" class="orijinal hidden"></p>
+      <p id="translationNotice" class="translation-notice hidden"></p>
+      <p id="localizedSummary" class="hidden" dir="rtl"></p>
       <p id="infoDesc"></p>
       <div id="funcsWrap">
         <h3>İşlevleri</h3>
@@ -209,6 +214,7 @@
     </div>
     <div class="bb-sep"></div>
     <div class="bb-group toggles">
+      <button id="tgPan" aria-pressed="false" title="Kaydırma modunu aç">✥ Kaydır</button>
       <button id="tgLabels">Etiketler</button>
       <button id="tgXray">X-Işını</button>
       <button id="tgSpin" class="active">Döndür</button>

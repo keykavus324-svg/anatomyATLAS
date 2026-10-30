@@ -135,7 +135,7 @@ export async function loadRealBody({ onProgress = () => {} } = {}) {
       funcs: info ? info.funcs : [],
       clinic: info ? info.clinic : '',
       fact: info ? info.fact : '',
-      en: base, def: info ? def : '', wiki,
+      en: base, englishDef: def, def: info ? def : '', wiki,
       infoId, tr: !!(infoId || trName),
     };
   }
