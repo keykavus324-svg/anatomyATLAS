@@ -2,7 +2,9 @@
 
 ## Gerçek Atlas modeli (public/models/, public/data/)
 
-Bu klasörlerdeki 3B modeller ve tanım verileri, bu projenin eseri değildir:
+Bu klasörlerdeki 3B modeller ve tanım verileri, bu projenin eseri değildir.
+Uygulama amblemindeki kafatası görüntüsü de bu veri kümesinden oluşturulmuş
+ve renk/sunum bakımından değiştirilmiştir:
 
 - **"BodyParts3D — The Database Center for Life Science — CC BY-SA 2.1 Japan"**
 - **"Z-Anatomy — the open source atlas of anatomy — CC BY-SA 4.0"**

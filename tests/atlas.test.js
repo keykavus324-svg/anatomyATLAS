@@ -147,9 +147,10 @@ test('uygulama adı başlıkta, arayüzde ve kurulum manifestinde aynıdır', ()
 test('marka simgesi sitede, açılışta ve kurulumda kullanılır', () => {
   const html = readFileSync('index.html', 'utf8');
   const manifest = JSON.parse(readFileSync('public/manifest.webmanifest', 'utf8'));
-  assert.match(html, /rel="icon" type="image\/svg\+xml" href="icons\/atlas-mark\.svg"/);
-  assert.equal((html.match(/src="icons\/atlas-mark\.svg"/g) || []).length, 2);
-  assert.match(readFileSync('public/icons/atlas-mark.svg', 'utf8'), /<svg/);
+  assert.match(html, /rel="icon" type="image\/png" href="icons\/icon-192\.png"/);
+  assert.equal((html.match(/src="icons\/atlas-emblem\.png"/g) || []).length, 2);
+  assert.equal(readFileSync('public/icons/atlas-emblem.png').toString('hex', 0, 8), '89504e470d0a1a0a');
+  assert.match(html, /amblemde aynı veri kümesinden kafatası görüntüsü/);
   for (const icon of manifest.icons) {
     const png = readFileSync(`public/${icon.src}`);
     assert.equal(png.toString('hex', 0, 8), '89504e470d0a1a0a');
