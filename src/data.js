@@ -1,4 +1,4 @@
-// CORPUS·3D — Anatomi bilgi veritabanı
+// TUĞRUL ATLAS — Anatomi bilgi veritabanı
 // Her yapı: Türkçe ad, Latince ad, sistem, açıklama, işlevler, klinik not, ilginç bilgi
 export const SYSTEMS = {
   skin:   { tr: 'Deri & Örtü',      color: '#e8b48c' },

@@ -1,4 +1,4 @@
-// CORPUS·3D — Z-Anatomy gerçek anatomik model yükleyici
+// TUĞRUL ATLAS — Z-Anatomy gerçek anatomik model yükleyici
 // Kaynak: github.com/nqwrc/3d-anatomy (Z-Anatomy glTF çıktısı, Draco sıkıştırmalı)
 // Lisans: CC BY-NC-SA 4.0 (bkz. public/models/License.txt ve ATTRIBUTION.md)
 //

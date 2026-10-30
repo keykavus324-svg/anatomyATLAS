@@ -1,4 +1,4 @@
-// CORPUS·3D — İnteraktif Anatomi Atlası (uygulama mantığı)
+// TUĞRUL ATLAS — İnteraktif Anatomi Atlası (uygulama mantığı)
 // Gerçek anatomik model: açık kaynak Z-Anatomy veri kümesi.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -730,7 +730,7 @@ $('#btnShot').onclick = () => {
   renderer.setClearColor(0x070d18, 1); renderer.render(scene, camera);
   renderer.domElement.toBlob((blob) => {
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob); a.download = 'corpus3d-anatomi.png'; a.click();
+    a.href = URL.createObjectURL(blob); a.download = 'tugrul-atlas-anatomi.png'; a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 3000);
     toast('📸 Görüntü kaydedildi — arkadaşına gönder bakalım kim gülecek 😏', 'ok');
   });
@@ -1107,7 +1107,7 @@ $('#quizExit').onclick = () => { endQuiz(); toast('Sınavdan çıktınız — ke
 $('#quizSkip').onclick = () => { if (!quiz.locked) revealAnswer('⏭ Pas geçtiniz.'); };
 $('#btnAgain').onclick = () => { hideModals(); $('#quizSetup').classList.remove('hidden'); };
 $('#btnChallenge').onclick = async () => {
-  const text = `🫀 CORPUS·3D Anatomi Sınavı'nda ${quiz.score} puan yaptım! (${quiz.correct}/${quiz.qs.length} doğru — unvanım: ${quiz.finalTitle || 'Hekim Adayı'})\nMacBook'undaki o uygulamayla beni geçebilir misin bakalım? 😏`;
+  const text = `🫀 TUĞRUL ATLAS Anatomi Sınavı'nda ${quiz.score} puan yaptım! (${quiz.correct}/${quiz.qs.length} doğru — unvanım: ${quiz.finalTitle || 'Hekim Adayı'})\nMacBook'undaki o uygulamayla beni geçebilir misin bakalım? 😏`;
   try { await navigator.clipboard.writeText(text); toast('📋 Meydan okuma kopyalandı! Arkadaşına gönder, cevabını bekle 😎', 'ok'); }
   catch { toast(text); }
 };
@@ -1266,7 +1266,7 @@ addEventListener('resize', () => {
     setTimeout(() => {
       $('#intro').classList.add('done');
       if (!restoreView()) animateCam(HOME_POS, HOME_TGT, 1.9);
-      setTimeout(() => toast(`👋 HOŞ GELDİNİZ! CORPUS·3D içinde ${M.meta.entryCount} yapı sizi bekliyor. Bir kasa tıklayın!`), 1300);
+      setTimeout(() => toast(`👋 HOŞ GELDİNİZ! TUĞRUL ATLAS içinde ${M.meta.entryCount} yapı sizi bekliyor. Bir kasa tıklayın!`), 1300);
     }, wait);
   };
   loadRealBody({

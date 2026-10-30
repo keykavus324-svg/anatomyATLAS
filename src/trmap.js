@@ -1,4 +1,4 @@
-// Z-Anatomy (İngilizce baz isim) -> CORPUS Türkçe içerik eşleştirmesi
+// Z-Anatomy (İngilizce baz isim) -> TUĞRUL ATLAS Türkçe içerik eşleştirmesi
 // 1) EXPLICIT: birebir isim eşleşmeleri
 // 2) RULES: düzenli ifadeler (sıra önemli, ilk uyan kazanır)
 // 3) TR_NAMES: kendi kartı İngilizce kalan ama Türkçe başlık alan yapılar

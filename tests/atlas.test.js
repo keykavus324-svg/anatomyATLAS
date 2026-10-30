@@ -131,3 +131,14 @@ test('yalnızca gerçek atlas kullanılır; yükleme hatasında yeniden deneme s
   assert.match(main, /introRetry.*classList\.remove\('hidden'\)/);
   assert.match(html, /id="introRetry"/);
 });
+
+
+test('uygulama adı başlıkta, arayüzde ve kurulum manifestinde aynıdır', () => {
+  const html = readFileSync('index.html', 'utf8');
+  const manifest = JSON.parse(readFileSync('public/manifest.webmanifest', 'utf8'));
+  assert.match(html, /<title>TUĞRUL ATLAS/);
+  assert.equal((html.match(/TUĞRUL <span>ATLAS<\/span>/g) || []).length, 2);
+  assert.equal(manifest.short_name, 'TUĞRUL ATLAS');
+  assert.match(manifest.name, /^TUĞRUL ATLAS/);
+  assert.doesNotMatch(html, /CORPUS·3D/);
+});

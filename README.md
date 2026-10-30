@@ -1,4 +1,4 @@
-# CORPUS·3D — İnteraktif Anatomi Atlası 🫀
+# TUĞRUL ATLAS — İnteraktif Anatomi Atlası 🫀
 
 > **Muhammet TUĞRUL** tarafından geliştirilen Türkçe, etkileşimli 3B anatomi atlası.
 > Katmanlar, rehberli dersler ve sınavlarla insan vücudunu keşfedin.
