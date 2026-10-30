@@ -608,3 +608,44 @@ button:focus-visible,input:focus-visible{outline:2px solid #e5c79d;outline-offse
 .atlas-panel-title{margin:14px 14px 0;padding:12px 14px;border:1px solid rgba(209,177,133,.25);border-radius:8px;background:rgba(209,177,133,.06);display:flex;flex-direction:column;gap:4px}
 .atlas-panel-title strong{font:500 18px Georgia,serif;color:#f1e6d4}.atlas-panel-title small{font-size:9px;letter-spacing:.14em;color:var(--muted)}
 #introRetry{display:block;margin:18px auto 0} #introMsg{display:block;max-width:300px;line-height:1.5}
+
+/* TUĞRUL ATLAS · kimlik ve arayüz */
+.brand-mark{flex:none;line-height:0}
+.brand-mark img{display:block;width:42px;height:42px;border-radius:11px;box-shadow:0 4px 16px rgba(0,0,0,.25)}
+.brand-text h1{font-size:21px;letter-spacing:.025em;white-space:nowrap}
+.brand-text h1 span{font-weight:400;color:#e0c399}
+.brand-text p{font-size:7.5px;letter-spacing:.19em;color:#a7b0a1}
+#topbar{background:linear-gradient(110deg,rgba(27,39,34,.98),rgba(20,28,25,.98));border-color:rgba(218,198,161,.19);box-shadow:0 12px 35px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.06)}
+.panel{background:linear-gradient(155deg,rgba(32,43,37,.97),rgba(23,31,27,.98));border-color:rgba(218,198,161,.16)}
+.atlas-panel-title{position:relative;overflow:hidden;margin:14px 14px 2px;padding:14px 15px 15px;background:linear-gradient(120deg,rgba(196,166,117,.13),rgba(196,166,117,.025));border-color:rgba(209,177,133,.23);gap:5px}
+.atlas-panel-title::after{content:"";position:absolute;width:86px;height:86px;right:-27px;top:-32px;border:1px solid rgba(220,196,155,.18);border-radius:50%;box-shadow:0 0 0 12px rgba(220,196,155,.035),0 0 0 24px rgba(220,196,155,.025);pointer-events:none}
+.atlas-panel-title .panel-eyebrow,.info-eyebrow{font-size:9px;font-weight:700;letter-spacing:.16em;color:#d6bc91;display:flex;justify-content:space-between;align-items:center}
+.atlas-panel-title .panel-eyebrow i{font-style:normal;color:#9d9f8d;letter-spacing:.08em}
+.atlas-panel-title strong{font-size:20px;line-height:1.15;color:#f3e9d8}
+.atlas-panel-title small{font-size:8px;letter-spacing:.16em;color:#9fa89a}
+.info-eyebrow{padding-bottom:13px;margin-bottom:17px;border-bottom:1px solid rgba(219,197,162,.16)}
+.info-eyebrow span:last-child{font-size:14px;color:#d6bc91}
+#infoDefault h2{font-size:28px;color:#f5eddf}
+#defaultLead{color:#b9c0b4;line-height:1.65}
+.howto{padding:13px 0;border-top:1px solid rgba(219,197,162,.1);border-bottom:1px solid rgba(219,197,162,.1);line-height:1.5}
+.fact-card{background:linear-gradient(135deg,rgba(195,168,120,.11),rgba(195,168,120,.025));border-color:rgba(209,177,133,.2)}
+.stats-row div{background:rgba(226,215,192,.035);border:1px solid rgba(219,197,162,.08)}
+#bottomBar{background:linear-gradient(110deg,rgba(29,40,34,.98),rgba(22,30,26,.98));border-color:rgba(218,198,161,.18)}
+#intro{background:radial-gradient(ellipse at 50% 38%,#34483c 0%,#1d2b24 35%,#101814 80%)}
+.intro-mark{border-radius:24px;box-shadow:0 20px 60px rgba(0,0,0,.28);filter:none}
+.intro-inner h1{font-family:Georgia,"Times New Roman",serif;font-weight:500;font-size:40px;letter-spacing:.045em}
+.intro-inner h1 span{font-weight:400;color:#e0c399}
+.intro-inner p{font-size:9px;letter-spacing:.32em}
+.intro-bar{background:rgba(238,224,201,.12)}
+@media(max-width:880px){
+  .brand-mark img{width:29px;height:29px;border-radius:8px}
+  .brand-text h1{font-size:16px}
+  .intro-inner h1{font-size:32px}
+}
+@media(max-width:360px){
+  .brand-mark img{width:24px;height:24px;border-radius:7px}
+  .brand-text h1{font-size:13px;letter-spacing:0}
+}
+@media(prefers-reduced-motion:reduce){.intro-mark{animation:none}}
+@media(max-width:1150px){.atlas-marginalia .atlas-marginalia-right{display:none}}
+@media(max-width:360px){.brand-text h1{font-size:12px}}

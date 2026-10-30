@@ -142,3 +142,20 @@ test('uygulama adı başlıkta, arayüzde ve kurulum manifestinde aynıdır', ()
   assert.match(manifest.name, /^TUĞRUL ATLAS/);
   assert.doesNotMatch(html, /CORPUS·3D/);
 });
+
+
+test('marka simgesi sitede, açılışta ve kurulumda kullanılır', () => {
+  const html = readFileSync('index.html', 'utf8');
+  const manifest = JSON.parse(readFileSync('public/manifest.webmanifest', 'utf8'));
+  assert.match(html, /rel="icon" type="image\/svg\+xml" href="icons\/atlas-mark\.svg"/);
+  assert.equal((html.match(/src="icons\/atlas-mark\.svg"/g) || []).length, 2);
+  assert.match(readFileSync('public/icons/atlas-mark.svg', 'utf8'), /<svg/);
+  for (const icon of manifest.icons) {
+    const png = readFileSync(`public/${icon.src}`);
+    assert.equal(png.toString('hex', 0, 8), '89504e470d0a1a0a');
+    const [width, height] = icon.sizes.split('x').map(Number);
+    assert.equal(png.readUInt32BE(16), width);
+    assert.equal(png.readUInt32BE(20), height);
+  }
+  assert.ok(manifest.icons.some((icon) => icon.purpose === 'maskable' && icon.src === 'icons/icon-maskable-512.png'));
+});
